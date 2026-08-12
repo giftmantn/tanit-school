@@ -192,6 +192,7 @@ function renderNavbar(profile) {
   const nav = document.getElementById("navbar");
   if (!nav) return;
   const lang = getLang();
+  const approved = !!(profile && profile.status === "approved");
   nav.innerHTML = `
     <div class="container nav-inner">
       <a href="index.html" class="brand">
@@ -203,10 +204,10 @@ function renderNavbar(profile) {
       </button>
       <nav class="nav-links" id="navLinks">
         <a class="link" href="browse.html" data-i18n="nav.browse"></a>
-        ${profile ? `<a class="link" href="favorites.html" data-i18n="nav.favorites"></a>` : ""}
-        ${profile && (profile.role === "teacher" || profile.role === "admin") ? `<a class="link" href="teacher.html" data-i18n="nav.teacher"></a>` : ""}
-        ${profile && profile.role === "admin" ? `<a class="link" href="admin.html" data-i18n="nav.admin"></a>` : ""}
-        ${profile ? `
+        ${approved ? `<a class="link" href="favorites.html" data-i18n="nav.favorites"></a>` : ""}
+        ${approved && (profile.role === "teacher" || profile.role === "admin") ? `<a class="link" href="teacher.html" data-i18n="nav.teacher"></a>` : ""}
+        ${approved && profile.role === "admin" ? `<a class="link" href="admin.html" data-i18n="nav.admin"></a>` : ""}
+        ${approved ? `
           <span class="user-chip">
             <span>${escapeHtml(profile.full_name || profile.email || "")}</span>
             <span class="role">${t("role." + (profile.role || "student"))}</span>
@@ -289,7 +290,7 @@ function optionList(items, selectedId, nameFn) {
     .join("");
 }
 
-// Auth guard: redirects to auth.html if not logged in / wrong role
+// Auth guard: redirects to auth.html if not logged in / wrong role / not approved
 async function requireRole(role) {
   const { session, profile } = await getAuth();
   if (!session) {
@@ -297,7 +298,11 @@ async function requireRole(role) {
     window.location.href = "auth.html";
     return null;
   }
-  if (role && (!profile || profile.role !== role)) {
+  if (!profile || profile.status !== "approved") {
+    window.location.href = "auth.html";
+    return null;
+  }
+  if (role && profile.role !== role) {
     alert(t("admin.no_perm"));
     window.location.href = "index.html";
     return null;

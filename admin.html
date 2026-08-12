@@ -33,6 +33,7 @@
               <th data-i18n="admin.users.name"></th>
               <th data-i18n="admin.users.email"></th>
               <th data-i18n="admin.users.role"></th>
+              <th data-i18n="admin.users.status"></th>
               <th data-i18n="admin.users.created"></th>
               <th data-i18n="admin.actions"></th>
             </tr>
@@ -215,6 +216,7 @@
       tbody.innerHTML = "";
       (data || []).forEach((u) => {
         const tr = document.createElement("tr");
+        const statusKey = "status." + (u.status || "pending");
         tr.innerHTML = `
           <td>${escapeHtml(u.full_name || "-")}${u.id === auth.session.user.id ? " " + t("admin.me") : ""}</td>
           <td>${escapeHtml(u.email || "-")}</td>
@@ -225,10 +227,15 @@
               <option value="admin" ${u.role === "admin" ? "selected" : ""}>${t("role.admin")}</option>
             </select>
           </td>
+          <td>
+            <span class="chip ${u.status === "approved" ? "primary" : u.status === "rejected" ? "accent" : ""}">${t(statusKey)}</span>
+          </td>
           <td>${formatDate(u.created_at)}</td>
           <td>
             <div class="actions">
               <button class="btn btn-sm save-role" data-id="${u.id}">${t("admin.save")}</button>
+              ${u.status !== "approved" ? `<button class="btn btn-sm approve-user" data-id="${u.id}">${t("admin.users.approve")}</button>` : ""}
+              ${u.status === "approved" ? `<button class="btn btn-sm btn-accent reject-user" data-id="${u.id}">${t("admin.users.reject")}</button>` : ""}
             </div>
           </td>`;
         tr.querySelector(".save-role").addEventListener("click", async () => {
@@ -237,6 +244,22 @@
           if (error) { showAlert("alertBox", t("misc.error") + " (" + error.message + ")", "error"); return; }
           showAlert("alertBox", t("admin.saved"), "success");
         });
+        const approveBtn = tr.querySelector(".approve-user");
+        if (approveBtn) {
+          approveBtn.addEventListener("click", async () => {
+            await sb.from("profiles").update({ status: "approved" }).eq("id", u.id);
+            showAlert("alertBox", t("admin.approved_ok"), "success");
+            await loadUsers();
+          });
+        }
+        const rejectBtn = tr.querySelector(".reject-user");
+        if (rejectBtn) {
+          rejectBtn.addEventListener("click", async () => {
+            await sb.from("profiles").update({ status: "rejected" }).eq("id", u.id);
+            showAlert("alertBox", t("admin.rejected_ok"), "success");
+            await loadUsers();
+          });
+        }
         tbody.appendChild(tr);
       });
     }

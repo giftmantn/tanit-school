@@ -55,30 +55,23 @@ window.SUPABASE_URL = "https://XXXX.supabase.co";   // votre URL
 window.SUPABASE_ANON_KEY = "eyJhbGciOi...";         // votre anon key
 ```
 
-### 3. Activer la vérification par code (OTP) à l'inscription
+### 3. Approbation des comptes (super admin)
 
-À l'inscription, un **code à 6 chiffres** est envoyé par e-mail pour activer le compte.
+Les nouveaux comptes sont créés avec le statut **« En attente »** : l'élève ou l'enseignant ne peut pas utiliser le site tant que le super admin ne l'a pas **approuvé**.
 
 1. Supabase → **Authentication** → **Sign In / Providers** → **Email** :
-   - Activez **Confirm email** (pour que le code soit requis).
-2. **Authentication** → **Emails** → onglet **Confirm signup** :
-   - Le modèle doit contenir la variable `{{ .Token }}` pour afficher le code.
-   - Exemple de modèle minimal :
-
-   ```html
-   <h2>Confirmez votre inscription</h2>
-   <p>Votre code de vérification :</p>
-   <h1>{{ .Token }}</h1>
-   <p>Ce code expire dans 10 minutes.</p>
-   ```
-
-3. Enregistrez le modèle → le site affiche désormais l'écran « Entrez le code à 6 chiffres » après l'inscription.
+   - Désactivez **Confirm email** (les comptes sont activés par l'approbation de l'admin, pas par e-mail).
+2. Le super admin se connecte au panneau **Administration** → onglet **Utilisateurs**.
+3. Chaque compte en attente affiche un bouton **Approuver** (ou **Rejeter**).
+4. Une fois approuvé, l'élève/enseignant peut se connecter et utiliser le site.
 
 ### 4. Créer votre premier compte admin
 
 1. Sur le site, inscrivez-vous (onglet « Créer un compte »).
 2. Dans Supabase : **Table Editor** → table `profiles`.
-3. Trouvez votre ligne et changez `role` de `student` en `admin`.
+3. Trouvez votre ligne et changez :
+   - `role` de `student` en `admin`
+   - `status` de `pending` en `approved`
 4. Reconnectez-vous → le lien « Administration » apparaît dans le menu.
 
 ### 5. Mettre le site en ligne (GitHub)

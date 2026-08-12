@@ -10,11 +10,16 @@ create table if not exists public.profiles (
   email text,
   full_name text,
   role text not null default 'student' check (role in ('student','teacher','admin')),
+  status text not null default 'pending' check (status in ('pending','approved','rejected')),
   created_at timestamptz default now()
 );
 
+-- If the table already existed (created before the approval feature),
+-- add the status column to it.
+alter table public.profiles add column if not exists status text not null default 'pending' check (status in ('pending','approved','rejected'));
+
 -- Auto-create a profile row when a user signs up.
--- The requested role comes from the sign-up form metadata.
+-- New accounts start as 'pending' until the admin approves them.
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql security definer set search_path = public
@@ -26,10 +31,11 @@ begin
   if requested not in ('student','teacher','admin') then
     requested := 'student';
   end if;
-  insert into public.profiles (id, email, full_name, role)
+  insert into public.profiles (id, email, full_name, role, status)
   values (new.id, new.email,
           coalesce(new.raw_user_meta_data ->> 'full_name', ''),
-          requested);
+          requested,
+          'pending');
   return new;
 end;
 $$;
