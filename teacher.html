@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Espace enseignant - Tanit School</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <nav id="navbar" class="navbar"></nav>
+
+  <main class="container">
+    <div class="page-head">
+      <h1 data-i18n="teacher.title"></h1>
+      <p data-i18n="teacher.subtitle"></p>
+    </div>
+
+    <div class="dash-grid">
+      <aside class="dash-side">
+        <nav class="dash-nav">
+          <a class="link active" href="teacher.html" data-i18n="teacher.upload.title"></a>
+          <a class="link" href="#myDocs" id="goMyDocs" data-i18n="teacher.my_docs"></a>
+        </nav>
+      </aside>
+
+      <section>
+        <div id="alertBox" class="alert"></div>
+
+        <div class="card" id="uploadCard">
+          <h2 data-i18n="teacher.upload.title" style="margin-bottom:18px"></h2>
+          <form id="docForm">
+            <input type="hidden" id="docId" />
+            <div class="field">
+              <label data-i18n="teacher.doc.title_fr"></label>
+              <input type="text" id="titleFr" class="input" required />
+            </div>
+            <div class="field">
+              <label data-i18n="teacher.doc.title_ar"></label>
+              <input type="text" id="titleAr" class="input" required />
+            </div>
+            <div class="field">
+              <label data-i18n="teacher.doc.title_en"></label>
+              <input type="text" id="titleEn" class="input" required />
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div class="field">
+                <label data-i18n="teacher.doc.desc_fr"></label>
+                <textarea id="descFr" class="input"></textarea>
+              </div>
+              <div class="field">
+                <label data-i18n="teacher.doc.desc_ar"></label>
+                <textarea id="descAr" class="input"></textarea>
+              </div>
+            </div>
+            <div class="field">
+              <label data-i18n="teacher.doc.desc_en"></label>
+              <textarea id="descEn" class="input"></textarea>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div class="field">
+                <label data-i18n="teacher.doc.level"></label>
+                <select id="levelSelect" class="input" required></select>
+              </div>
+              <div class="field">
+                <label data-i18n="teacher.doc.subject"></label>
+                <select id="subjectSelect" class="input" required></select>
+              </div>
+            </div>
+            <div class="field">
+              <label data-i18n="teacher.doc.drive_url"></label>
+              <input type="url" id="driveUrl" class="input" placeholder="https://drive.google.com/file/d/..." required />
+              <small style="color:var(--muted)" data-i18n="teacher.doc.drive_help"></small>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button type="submit" class="btn" id="submitBtn" data-i18n="teacher.doc.submit"></button>
+              <button type="button" class="btn btn-ghost hidden" id="cancelEdit" data-i18n="admin.cancel"></button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card" id="myDocs" style="margin-top:20px">
+          <h2 data-i18n="teacher.my_docs" style="margin-bottom:16px"></h2>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th data-i18n="admin.doc.title_fr"></th>
+                  <th data-i18n="teacher.doc.level"></th>
+                  <th data-i18n="teacher.doc.subject"></th>
+                  <th data-i18n="admin.actions"></th>
+                </tr>
+              </thead>
+              <tbody id="docsBody"></tbody>
+            </table>
+          </div>
+          <div id="noDocs" class="empty" style="display:none;padding:30px 10px">
+            <p data-i18n="teacher.doc.no_docs"></p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer id="footer"></footer>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    let auth = null;
+    let levels = [];
+    let subjects = [];
+    let editingId = null;
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      initSupabase();
+      applyLang();
+      auth = await requireRole("teacher");
+      if (!auth) return;
+      renderNavbar(auth.profile);
+
+      const [l, s] = await Promise.all([fetchLevels(), fetchSubjects()]);
+      levels = l;
+      subjects = s;
+
+      const levelSel = document.getElementById("levelSelect");
+      const subjectSel = document.getElementById("subjectSelect");
+      levelSel.innerHTML = optionList(levels, null, (x) => x[`name_${getLang()}`] || x.name_fr);
+      subjectSel.innerHTML = optionList(subjects, null, (x) => x[`name_${getLang()}`] || x.name_fr);
+
+      await loadMyDocs();
+
+      document.getElementById("goMyDocs").addEventListener("click", () => {
+        document.getElementById("myDocs").scrollIntoView({ behavior: "smooth" });
+      });
+
+      document.getElementById("docForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearAlert("alertBox");
+        const url = document.getElementById("driveUrl").value.trim();
+        if (!isValidDriveUrl(url)) {
+          showAlert("alertBox", t("teacher.invalid_drive"), "error");
+          return;
+        }
+        const payload = {
+          title_fr: document.getElementById("titleFr").value.trim(),
+          title_ar: document.getElementById("titleAr").value.trim(),
+          title_en: document.getElementById("titleEn").value.trim(),
+          desc_fr: document.getElementById("descFr").value.trim(),
+          desc_ar: document.getElementById("descAr").value.trim(),
+          desc_en: document.getElementById("descEn").value.trim(),
+          level_id: levelSel.value,
+          subject_id: subjectSel.value,
+          drive_url: url,
+        };
+
+        if (editingId) {
+          const { error } = await sb.from("documents").update(payload).eq("id", editingId);
+          if (error) { showAlert("alertBox", t("misc.error") + " (" + error.message + ")", "error"); return; }
+          showAlert("alertBox", t("teacher.doc.updated"), "success");
+          resetForm();
+        } else {
+          const { error } = await sb.from("documents").insert({ ...payload, uploader_id: auth.session.user.id });
+          if (error) { showAlert("alertBox", t("misc.error") + " (" + error.message + ")", "error"); return; }
+          showAlert("alertBox", t("teacher.doc.added"), "success");
+          resetForm();
+        }
+        await loadMyDocs();
+      });
+
+      document.getElementById("cancelEdit").addEventListener("click", resetForm);
+    });
+
+    async function loadMyDocs() {
+      const { data } = await sb
+        .from("documents")
+        .select("*")
+        .eq("uploader_id", auth.session.user.id)
+        .order("created_at", { ascending: false });
+      const tbody = document.getElementById("docsBody");
+      const noDocs = document.getElementById("noDocs");
+      tbody.innerHTML = "";
+      noDocs.style.display = (data && data.length) ? "none" : "block";
+      (data || []).forEach((d) => {
+        const level = levels.find((l) => l.id === d.level_id);
+        const subject = subjects.find((s) => s.id === d.subject_id);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(d.title_fr)}</td>
+          <td>${escapeHtml(level ? (level[`name_${getLang()}`] || level.name_fr) : "-")}</td>
+          <td>${escapeHtml(subject ? (subject[`name_${getLang()}`] || subject.name_fr) : "-")}</td>
+          <td>
+            <div class="actions">
+              <button class="btn btn-sm btn-ghost" data-act="edit" data-id="${d.id}">${t("teacher.edit")}</button>
+              <button class="btn btn-sm btn-accent" data-act="del" data-id="${d.id}">${t("teacher.delete")}</button>
+            </div>
+          </td>`;
+        tr.querySelector('[data-act="edit"]').addEventListener("click", () => editDoc(d));
+        tr.querySelector('[data-act="del"]').addEventListener("click", async () => {
+          if (!confirm(t("misc.confirm_delete"))) return;
+          await sb.from("documents").delete().eq("id", d.id);
+          showAlert("alertBox", t("teacher.doc.deleted"), "success");
+          await loadMyDocs();
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    function editDoc(d) {
+      editingId = d.id;
+      document.getElementById("docId").value = d.id;
+      document.getElementById("titleFr").value = d.title_fr;
+      document.getElementById("titleAr").value = d.title_ar;
+      document.getElementById("titleEn").value = d.title_en;
+      document.getElementById("descFr").value = d.desc_fr || "";
+      document.getElementById("descAr").value = d.desc_ar || "";
+      document.getElementById("descEn").value = d.desc_en || "";
+      document.getElementById("levelSelect").value = d.level_id;
+      document.getElementById("subjectSelect").value = d.subject_id;
+      document.getElementById("driveUrl").value = d.drive_url;
+      document.getElementById("submitBtn").textContent = t("admin.save");
+      document.getElementById("cancelEdit").classList.remove("hidden");
+      document.getElementById("uploadCard").scrollIntoView({ behavior: "smooth" });
+    }
+
+    function resetForm() {
+      editingId = null;
+      document.getElementById("docForm").reset();
+      document.getElementById("submitBtn").textContent = t("teacher.doc.submit");
+      document.getElementById("cancelEdit").classList.add("hidden");
+    }
+  </script>
+</body>
+</html>

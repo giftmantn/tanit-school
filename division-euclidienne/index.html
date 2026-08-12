@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapitre 1 · Activités Numériques I — Cahier interactif</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">Chapitre 1</p>
+  <h1>Activités Numériques I</h1>
+  <p class="sub">Division euclidienne · Multiples et diviseurs — Cahier interactif</p>
+  <div class="name-line">
+    <label>Nom <input type="text" placeholder="…"></label>
+    <label>Date <input type="text" placeholder="…"></label>
+    <label>Classe <input type="text" placeholder="…"></label>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <h2 class="section-title"> I. Division euclidienne</h2>
+  
+  <div class="card">
+    <span class="band def">1. Définition</span>
+    <p>La <b>division euclidienne</b> d'un nombre entier, appelé <b>dividende</b>, par un nombre entier différent de zéro, appelé <b>diviseur</b>, revient à trouver deux nombres, appelés <b>quotient</b> et <b>reste</b>, vérifiant :</p>
+    <div class="formula">
+      dividende = diviseur × quotient + reste <small>et 0 ≤ reste &lt; diviseur</small>
+    </div>
+    <div class="vocab">
+      <span class="dividende">dividende</span>
+      <span class="diviseur">diviseur</span>
+      <span class="quotient">quotient</span>
+      <span class="reste">reste</span>
+    </div>
+    <img class="diagram" src="images/image1-definition.jpeg" alt="Exemple de division euclidienne posée : 893 divisé par 13">
+  </div>
+
+  <div class="card">
+    <span class="band act">✎ Activité — Écris la preuve de chaque division</span>
+    <p>Pour chacune de ces divisions, écris la <b>preuve</b> qui correspond, comme dans les deux exemples (a. et b.) :</p>
+    <img class="diagram" src="images/image2-activite.jpeg" alt="Dix divisions posées, étiquetées de a à j">
+    <div class="proof-grid" id="proofGrid"></div>
+  </div>
+
+  <div class="card">
+    <span class="band ex">? Exercice — Problème</span>
+    <p><b>Énoncé :</b> Une tarte pour 4 personnes coûte 7 €. Une cuisinière dans un restaurant dispose de 85 €. Combien peut-elle acheter de tartes ? Combien lui reste-t-il d'argent ?</p>
+    <div class="line"><span>Nombre de tartes achetées :</span><input type="text"></div>
+    <div class="line"><span>Argent restant :</span><input type="text"></div>
+    <p class="hint">Astuce : effectue la division euclidienne de 85 par 7.</p>
+  </div>
+
+  <div class="card">
+    <span class="band ex">✎ Exercice 1 — Complète les divisions</span>
+    <p>Pour chaque division, complète ce qui manque : parfois un nombre (quotient ou reste), parfois le <b>nom</b> de l'élément (dividende, diviseur, quotient, reste). Pour les noms, fais glisser une étiquette dans la bonne case — ou choisis dans la liste.</p>
+
+    <p class="instructions hint">Exemple : 38 = 5 × 7 + 3 → 38 est le <b>dividende</b>, 5 le <b>diviseur</b>, 7 le <b>quotient</b>, 3 le <b>reste</b>.</p>
+
+    <div id="eqRows"></div>
+  </div>
+
+  <div class="card">
+    <span class="band ex">✎ Exercice 2 — Vrai ou faux ?</span>
+    <p>Cette équation représente-t-elle une division euclidienne correcte ? Réponds par <b>vrai</b> ou <b>faux</b>, puis justifie ta réponse (équation fausse ? reste ≥ diviseur ?…).</p>
+    <div id="vfEqList"></div>
+  </div>
+
+  <h2 class="section-title">II. Multiples et diviseurs</h2>
+
+  <div class="card">
+    <span class="band def">Définition</span>
+    <p>Si le reste de la division euclidienne d'un nombre entier <i>a</i> par un nombre entier non nul <i>b</i> est égal à 0, on dit que :</p>
+    <div class="vocab">
+      <span>a est un <b>multiple</b> de b</span>
+      <span>b est un <b>diviseur</b> de a</span>
+      <span>a est <b>divisible</b> par b</span>
+    </div>
+    <div class="formula">105 = 15 × 7 + 0 = 15 × 7</div>
+    <p>La division euclidienne de 105 par 7 donne un reste nul : <b>105 = 15 × 7</b>. On peut dire que :</p>
+    <ul class="remark-list">
+      <li>105 est un <b>multiple</b> de 7</li>
+      <li>7 est un <b>diviseur</b> de 105</li>
+      <li>105 est <b>divisible</b> par 7</li>
+    </ul>
+    <div class="remark-box">
+      <b>Remarques :</b><br>
+      1) On ne peut pas diviser par 0.<br>
+      2) Ne confonds pas le diviseur d'un nombre et le diviseur dans une division euclidienne.
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="band ex">✎ Exercice 1 — Complète les phrases</span>
+    <p class="hint">À l'aide du vocabulaire ou d'un nombre qui convient.</p>
+    <p class="sentence">36 est un <input type="text" class="blank"> de 9.</p>
+    <p class="sentence">48 est <input type="text" class="blank"> par 6.</p>
+    <p class="sentence">5 est un <input type="text" class="blank"> de 30.</p>
+    <p class="sentence"><input type="text" class="blank blank-short"> est un multiple de 15.</p>
+    <p class="sentence">3 n'est pas un <input type="text" class="blank"> de 43.</p>
+  </div>
+
+  <div class="card">
+    <span class="band ex">✎ Exercice 2 — Vrai ou faux ?</span>
+    <p class="hint">Colorie la bonne étiquette.</p>
+    <div id="vfList"></div>
+  </div>
+
+  <div class="actions">
+    <button class="main-btn btn-ghost" id="printBtn">Imprimer 🖨️</button>
+    <button class="main-btn btn-ghost" id="resetBtn">Tout effacer</button>
+  </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

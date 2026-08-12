@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Connexion - Tanit School</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <nav id="navbar" class="navbar"></nav>
+
+  <main class="container">
+    <div class="auth-wrap">
+      <div class="card">
+        <div class="auth-tabs">
+          <button id="tabLogin" class="active" data-i18n="auth.login.title"></button>
+          <button id="tabSignup" data-i18n="auth.signup.title"></button>
+        </div>
+
+        <div id="alertBox" class="alert"></div>
+
+        <!-- LOGIN FORM -->
+        <form id="loginForm">
+          <h2 style="margin-bottom:18px" data-i18n="auth.welcome.back"></h2>
+          <div class="field">
+            <label data-i18n="auth.email"></label>
+            <input type="email" id="loginEmail" class="input" required />
+          </div>
+          <div class="field">
+            <label data-i18n="auth.password"></label>
+            <input type="password" id="loginPassword" class="input" required />
+          </div>
+          <button type="submit" class="btn btn-block btn-lg" data-i18n="auth.login.btn"></button>
+          <p style="margin-top:14px;text-align:center;font-size:.9rem">
+            <a href="#" id="toSignup" data-i18n="auth.no_account"></a>
+          </p>
+        </form>
+
+        <!-- SIGNUP FORM -->
+        <form id="signupForm" class="hidden">
+          <h2 style="margin-bottom:18px" data-i18n="auth.welcome.new"></h2>
+          <div class="field">
+            <label data-i18n="auth.fullname"></label>
+            <input type="text" id="suName" class="input" required />
+          </div>
+          <div class="field">
+            <label data-i18n="auth.email"></label>
+            <input type="email" id="suEmail" class="input" required />
+          </div>
+          <div class="field">
+            <label data-i18n="auth.password"></label>
+            <input type="password" id="suPassword" class="input" required />
+          </div>
+          <div class="field">
+            <label data-i18n="auth.confirm_password"></label>
+            <input type="password" id="suPassword2" class="input" required />
+          </div>
+          <div class="field">
+            <label data-i18n="auth.role"></label>
+            <select id="suRole" class="input">
+              <option value="student" data-i18n="auth.role.student"></option>
+              <option value="teacher" data-i18n="auth.role.teacher"></option>
+            </select>
+          </div>
+          <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px" data-i18n="auth.teacher_hint"></p>
+          <button type="submit" class="btn btn-block btn-lg" data-i18n="auth.signup.btn"></button>
+          <p style="margin-top:14px;text-align:center;font-size:.9rem">
+            <a href="#" id="toLogin" data-i18n="auth.have_account"></a>
+          </p>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <footer id="footer"></footer>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      initSupabase();
+      const { session, profile } = await getAuth();
+      if (session) {
+        window.location.href = profile && profile.role === "admin" ? "admin.html"
+          : profile && profile.role === "teacher" ? "teacher.html"
+          : "browse.html";
+        return;
+      }
+      renderNavbar(null);
+      applyLang();
+
+      const loginForm = document.getElementById("loginForm");
+      const signupForm = document.getElementById("signupForm");
+      const tabLogin = document.getElementById("tabLogin");
+      const tabSignup = document.getElementById("tabSignup");
+
+      function showLogin() {
+        loginForm.classList.remove("hidden");
+        signupForm.classList.add("hidden");
+        tabLogin.classList.add("active");
+        tabSignup.classList.remove("active");
+      }
+      function showSignup() {
+        loginForm.classList.add("hidden");
+        signupForm.classList.remove("hidden");
+        tabSignup.classList.add("active");
+        tabLogin.classList.remove("active");
+      }
+
+      tabLogin.addEventListener("click", showLogin);
+      tabSignup.addEventListener("click", showSignup);
+      document.getElementById("toSignup").addEventListener("click", (e) => { e.preventDefault(); showSignup(); });
+      document.getElementById("toLogin").addEventListener("click", (e) => { e.preventDefault(); showLogin(); });
+
+      // LOGIN
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearAlert("alertBox");
+        const email = document.getElementById("loginEmail").value.trim();
+        const password = document.getElementById("loginPassword").value;
+        if (!email || !password) { showAlert("alertBox", t("auth.error.required"), "error"); return; }
+        const { error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) { showAlert("alertBox", t("auth.error.login"), "error"); return; }
+        const { profile: p } = await getAuth();
+        window.location.href = p && p.role === "admin" ? "admin.html"
+          : p && p.role === "teacher" ? "teacher.html"
+          : "browse.html";
+      });
+
+      // SIGNUP
+      signupForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearAlert("alertBox");
+        const name = document.getElementById("suName").value.trim();
+        const email = document.getElementById("suEmail").value.trim();
+        const password = document.getElementById("suPassword").value;
+        const password2 = document.getElementById("suPassword2").value;
+        const role = document.getElementById("suRole").value;
+        if (!name || !email || !password || !password2) { showAlert("alertBox", t("auth.error.required"), "error"); return; }
+        if (password.length < 6) { showAlert("alertBox", t("auth.error.password_short"), "error"); return; }
+        if (password !== password2) { showAlert("alertBox", t("auth.error.password_mismatch"), "error"); return; }
+        const { data, error } = await sb.auth.signUp({
+          email,
+          password,
+          options: { data: { full_name: name, role } },
+        });
+        if (error) { showAlert("alertBox", t("auth.error.signup") + " (" + error.message + ")", "error"); return; }
+        if (data.session) {
+          window.location.href = role === "teacher" ? "teacher.html" : "browse.html";
+        } else {
+          showAlert("alertBox", t("auth.error.signup") + " - " + (t("auth.email_confirm") || ""), "success");
+        }
+      });
+    });
+  </script>
+</body>
+</html>

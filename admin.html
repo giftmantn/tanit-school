@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Administration - Tanit School</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <nav id="navbar" class="navbar"></nav>
+
+  <main class="container">
+    <div class="page-head">
+      <h1 data-i18n="admin.title"></h1>
+      <p data-i18n="admin.subtitle"></p>
+    </div>
+
+    <div class="tabs">
+      <button data-tab="users" class="active" data-i18n="admin.tab.users"></button>
+      <button data-tab="documents" data-i18n="admin.tab.documents"></button>
+      <button data-tab="levels" data-i18n="admin.tab.levels"></button>
+      <button data-tab="subjects" data-i18n="admin.tab.subjects"></button>
+    </div>
+
+    <div id="alertBox" class="alert"></div>
+
+    <!-- USERS -->
+    <div id="tab-users">
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th data-i18n="admin.users.name"></th>
+              <th data-i18n="admin.users.email"></th>
+              <th data-i18n="admin.users.role"></th>
+              <th data-i18n="admin.users.created"></th>
+              <th data-i18n="admin.actions"></th>
+            </tr>
+          </thead>
+          <tbody id="usersBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DOCUMENTS -->
+    <div id="tab-documents" class="hidden">
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th data-i18n="admin.doc.title_fr"></th>
+              <th data-i18n="admin.doc.level"></th>
+              <th data-i18n="admin.doc.subject"></th>
+              <th data-i18n="admin.published"></th>
+              <th data-i18n="admin.actions"></th>
+            </tr>
+          </thead>
+          <tbody id="docsBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LEVELS -->
+    <div id="tab-levels" class="hidden">
+      <div class="card" style="margin-bottom:20px">
+        <form id="levelForm" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;align-items:end">
+          <div class="field" style="margin:0">
+            <label data-i18n="admin.level.name_fr"></label>
+            <input type="text" id="levelFr" class="input" required />
+          </div>
+          <div class="field" style="margin:0">
+            <label data-i18n="admin.level.name_ar"></label>
+            <input type="text" id="levelAr" class="input" required />
+          </div>
+          <div class="field" style="margin:0">
+            <label data-i18n="admin.level.name_en"></label>
+            <input type="text" id="levelEn" class="input" required />
+          </div>
+          <div class="field" style="margin:0">
+            <label data-i18n="admin.level.order"></label>
+            <input type="number" id="levelOrd" class="input" value="0" />
+          </div>
+          <button type="submit" class="btn" data-i18n="admin.add"></button>
+        </form>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th data-i18n="admin.level.name_fr"></th>
+              <th data-i18n="admin.level.name_ar"></th>
+              <th data-i18n="admin.level.name_en"></th>
+              <th data-i18n="admin.level.order"></th>
+              <th data-i18n="admin.actions"></th>
+            </tr>
+          </thead>
+          <tbody id="levelsBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SUBJECTS -->
+    <div id="tab-subjects" class="hidden">
+      <div class="card" style="margin-bottom:20px">
+        <form id="subjectForm" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;align-items:end">
+          <div class="field" style="margin:0">
+            <label data-i18n="admin.subject.name_fr"></label>
+            <input type="text" id="subjectFr" class="input" required />
+          </div>
+          <div class="field" style="margin:0">
+            <label data-i18n="admin.subject.name_ar"></label>
+            <input type="text" id="subjectAr" class="input" required />
+          </div>
+          <div class="field" style="margin:0">
+            <label data-i18n="admin.subject.name_en"></label>
+            <input type="text" id="subjectEn" class="input" required />
+          </div>
+          <div class="field" style="margin:0">
+            <label data-i18n="admin.level.order"></label>
+            <input type="number" id="subjectOrd" class="input" value="0" />
+          </div>
+          <button type="submit" class="btn" data-i18n="admin.add"></button>
+        </form>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th data-i18n="admin.subject.name_fr"></th>
+              <th data-i18n="admin.subject.name_ar"></th>
+              <th data-i18n="admin.subject.name_en"></th>
+              <th data-i18n="admin.level.order"></th>
+              <th data-i18n="admin.actions"></th>
+            </tr>
+          </thead>
+          <tbody id="subjectsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <footer id="footer"></footer>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    let auth = null;
+    let levels = [];
+    let subjects = [];
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      initSupabase();
+      applyLang();
+      auth = await requireRole("admin");
+      if (!auth) return;
+      renderNavbar(auth.profile);
+
+      // Tabs
+      document.querySelectorAll(".tabs button").forEach((b) => {
+        b.addEventListener("click", () => {
+          document.querySelectorAll(".tabs button").forEach((x) => x.classList.remove("active"));
+          b.classList.add("active");
+          ["users", "documents", "levels", "subjects"].forEach((tab) => {
+            document.getElementById("tab-" + tab).classList.toggle("hidden", tab !== b.dataset.tab);
+          });
+        });
+      });
+
+      await loadAll();
+
+      document.getElementById("levelForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearAlert("alertBox");
+        const payload = {
+          name_fr: document.getElementById("levelFr").value.trim(),
+          name_ar: document.getElementById("levelAr").value.trim(),
+          name_en: document.getElementById("levelEn").value.trim(),
+          ord: parseInt(document.getElementById("levelOrd").value || "0"),
+        };
+        const { error } = await sb.from("levels").insert(payload);
+        if (error) { showAlert("alertBox", t("misc.error") + " (" + error.message + ")", "error"); return; }
+        e.target.reset();
+        showAlert("alertBox", t("admin.saved"), "success");
+        levels = await fetchLevels();
+        renderLevels();
+      });
+
+      document.getElementById("subjectForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearAlert("alertBox");
+        const payload = {
+          name_fr: document.getElementById("subjectFr").value.trim(),
+          name_ar: document.getElementById("subjectAr").value.trim(),
+          name_en: document.getElementById("subjectEn").value.trim(),
+          ord: parseInt(document.getElementById("subjectOrd").value || "0"),
+        };
+        const { error } = await sb.from("subjects").insert(payload);
+        if (error) { showAlert("alertBox", t("misc.error") + " (" + error.message + ")", "error"); return; }
+        e.target.reset();
+        showAlert("alertBox", t("admin.saved"), "success");
+        subjects = await fetchSubjects();
+        renderSubjects();
+      });
+    });
+
+    async function loadAll() {
+      await Promise.all([loadUsers(), loadDocs(), renderLevels(), renderSubjects()]);
+    }
+
+    async function loadUsers() {
+      const { data } = await sb.from("profiles").select("*").order("created_at", { ascending: false });
+      const tbody = document.getElementById("usersBody");
+      tbody.innerHTML = "";
+      (data || []).forEach((u) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(u.full_name || "-")}${u.id === auth.session.user.id ? " " + t("admin.me") : ""}</td>
+          <td>${escapeHtml(u.email || "-")}</td>
+          <td>
+            <select class="input role-sel" data-id="${u.id}" style="padding:6px 10px;width:auto">
+              <option value="student" ${u.role === "student" ? "selected" : ""}>${t("role.student")}</option>
+              <option value="teacher" ${u.role === "teacher" ? "selected" : ""}>${t("role.teacher")}</option>
+              <option value="admin" ${u.role === "admin" ? "selected" : ""}>${t("role.admin")}</option>
+            </select>
+          </td>
+          <td>${formatDate(u.created_at)}</td>
+          <td>
+            <div class="actions">
+              <button class="btn btn-sm save-role" data-id="${u.id}">${t("admin.save")}</button>
+            </div>
+          </td>`;
+        tr.querySelector(".save-role").addEventListener("click", async () => {
+          const role = tr.querySelector(".role-sel").value;
+          const { error } = await sb.from("profiles").update({ role }).eq("id", u.id);
+          if (error) { showAlert("alertBox", t("misc.error") + " (" + error.message + ")", "error"); return; }
+          showAlert("alertBox", t("admin.saved"), "success");
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function loadDocs() {
+      const { data } = await sb.from("documents").select("*").order("created_at", { ascending: false });
+      const tbody = document.getElementById("docsBody");
+      tbody.innerHTML = "";
+      (data || []).forEach((d) => {
+        const level = levels.find((l) => l.id === d.level_id);
+        const subject = subjects.find((s) => s.id === d.subject_id);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(d.title_fr)}</td>
+          <td>${escapeHtml(level ? (level[`name_${getLang()}`] || level.name_fr) : "-")}</td>
+          <td>${escapeHtml(subject ? (subject[`name_${getLang()}`] || subject.name_fr) : "-")}</td>
+          <td>
+            <select class="input approve-sel" data-id="${d.id}" style="padding:6px 10px;width:auto">
+              <option value="true" ${d.approved ? "selected" : ""}>${t("misc.yes")}</option>
+              <option value="false" ${!d.approved ? "selected" : ""}>${t("misc.no")}</option>
+            </select>
+          </td>
+          <td>
+            <div class="actions">
+              <a class="btn btn-sm btn-ghost" href="document.html?id=${d.id}" target="_blank">${t("doc.view")}</a>
+              <button class="btn btn-sm save-approve" data-id="${d.id}">${t("admin.save")}</button>
+              <button class="btn btn-sm btn-accent del-doc" data-id="${d.id}">${t("admin.delete")}</button>
+            </div>
+          </td>`;
+        tr.querySelector(".save-approve").addEventListener("click", async () => {
+          const approved = tr.querySelector(".approve-sel").value === "true";
+          await sb.from("documents").update({ approved }).eq("id", d.id);
+          showAlert("alertBox", t("admin.saved"), "success");
+        });
+        tr.querySelector(".del-doc").addEventListener("click", async () => {
+          if (!confirm(t("misc.confirm_delete"))) return;
+          await sb.from("documents").delete().eq("id", d.id);
+          showAlert("alertBox", t("admin.deleted"), "success");
+          await loadDocs();
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderLevels() {
+      const tbody = document.getElementById("levelsBody");
+      tbody.innerHTML = "";
+      levels.forEach((l) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(l.name_fr)}</td>
+          <td>${escapeHtml(l.name_ar)}</td>
+          <td>${escapeHtml(l.name_en)}</td>
+          <td>${l.ord}</td>
+          <td><button class="btn btn-sm btn-accent del-level" data-id="${l.id}">${t("admin.delete")}</button></td>`;
+        tr.querySelector(".del-level").addEventListener("click", async () => {
+          if (!confirm(t("misc.confirm_delete"))) return;
+          await sb.from("levels").delete().eq("id", l.id);
+          levels = await fetchLevels();
+          renderLevels();
+          showAlert("alertBox", t("admin.deleted"), "success");
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderSubjects() {
+      const tbody = document.getElementById("subjectsBody");
+      tbody.innerHTML = "";
+      subjects.forEach((s) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(s.name_fr)}</td>
+          <td>${escapeHtml(s.name_ar)}</td>
+          <td>${escapeHtml(s.name_en)}</td>
+          <td>${s.ord}</td>
+          <td><button class="btn btn-sm btn-accent del-subject" data-id="${s.id}">${t("admin.delete")}</button></td>`;
+        tr.querySelector(".del-subject").addEventListener("click", async () => {
+          if (!confirm(t("misc.confirm_delete"))) return;
+          await sb.from("subjects").delete().eq("id", s.id);
+          subjects = await fetchSubjects();
+          renderSubjects();
+          showAlert("alertBox", t("admin.deleted"), "success");
+        });
+        tbody.appendChild(tr);
+      });
+    }
+  </script>
+</body>
+</html>

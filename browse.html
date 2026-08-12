@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bibliothèque - Tanit School</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <nav id="navbar" class="navbar"></nav>
+
+  <main class="container">
+    <div class="page-head">
+      <h1 data-i18n="browse.title"></h1>
+      <p data-i18n="browse.subtitle"></p>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="pointer-events:none"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="searchInput" class="input" data-i18n-placeholder="browse.search_ph" />
+      </div>
+      <button id="clearFilters" class="btn btn-ghost btn-sm" data-i18n="browse.filter" style="display:none">✕</button>
+    </div>
+
+    <div class="filters">
+      <select id="levelFilter" class="input"></select>
+      <select id="subjectFilter" class="input"></select>
+    </div>
+
+    <div id="results" class="card-row"></div>
+    <div id="emptyState" class="empty hidden">
+      <div class="big">📚</div>
+      <p data-i18n="browse.empty"></p>
+    </div>
+  </main>
+
+  <footer id="footer"></footer>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    let allDocs = [];
+    let levels = [];
+    let subjects = [];
+    let favIds = new Set();
+    let isLoggedIn = false;
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      initSupabase();
+      applyLang();
+      const { session, profile } = await getAuth();
+      isLoggedIn = !!session;
+      renderNavbar(profile);
+
+      const [l, s] = await Promise.all([fetchLevels(), fetchSubjects()]);
+      levels = l;
+      subjects = s;
+      populateFilters();
+      if (session) favIds = await loadFavIds();
+      await loadDocs();
+    });
+
+    function populateFilters() {
+      const levelSel = document.getElementById("levelFilter");
+      const subjectSel = document.getElementById("subjectFilter");
+      levelSel.innerHTML = `<option value="">${t("browse.all_levels")}</option>` +
+        optionList(levels, null, (l) => l[`name_${getLang()}`] || l.name_fr);
+      subjectSel.innerHTML = `<option value="">${t("browse.all_subjects")}</option>` +
+        optionList(subjects, null, (s) => s[`name_${getLang()}`] || s.name_fr);
+      levelSel.addEventListener("change", render);
+      subjectSel.addEventListener("change", render);
+      document.getElementById("searchInput").addEventListener("input", render);
+      document.getElementById("clearFilters").addEventListener("click", () => {
+        levelSel.value = "";
+        subjectSel.value = "";
+        document.getElementById("searchInput").value = "";
+        render();
+      });
+    }
+
+    async function loadDocs() {
+      const { data } = await sb.from("documents").select("*").order("created_at", { ascending: false });
+      allDocs = data || [];
+      render();
+    }
+
+    function render() {
+      const q = document.getElementById("searchInput").value.trim().toLowerCase();
+      const lv = document.getElementById("levelFilter").value;
+      const sub = document.getElementById("subjectFilter").value;
+      const lang = getLang();
+
+      const filtered = allDocs.filter((d) => {
+        if (lv && d.level_id !== lv) return false;
+        if (sub && d.subject_id !== sub) return false;
+        if (q) {
+          const hay = [d.title_fr, d.title_ar, d.title_en, d.desc_fr, d.desc_ar, d.desc_en].join(" ").toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      const results = document.getElementById("results");
+      const empty = document.getElementById("emptyState");
+      results.innerHTML = "";
+      if (!filtered.length) {
+        empty.classList.remove("hidden");
+        document.getElementById("clearFilters").style.display = allDocs.length ? "inline-flex" : "none";
+        return;
+      }
+      empty.classList.add("hidden");
+      document.getElementById("clearFilters").style.display = "inline-flex";
+      filtered.forEach((d) => results.appendChild(docCard(d, levels, subjects, favIds, isLoggedIn)));
+    }
+  </script>
+</body>
+</html>
