@@ -48,7 +48,7 @@ create trigger on_auth_user_created
 -- ---------- LEVELS ----------
 create table if not exists public.levels (
   id uuid primary key default gen_random_uuid(),
-  name_fr text not null,
+  name_fr text not null unique,
   name_ar text not null,
   name_en text not null,
   ord int default 0
@@ -73,7 +73,7 @@ on conflict do nothing;
 -- ---------- SUBJECTS ----------
 create table if not exists public.subjects (
   id uuid primary key default gen_random_uuid(),
-  name_fr text not null,
+  name_fr text not null unique,
   name_ar text not null,
   name_en text not null,
   ord int default 0
@@ -122,6 +122,7 @@ create table if not exists public.favorites (
 
 -- ============================================================
 -- ROW LEVEL SECURITY
+-- (Safe to re-run: each policy is dropped before being created)
 -- ============================================================
 alter table public.profiles  enable row level security;
 alter table public.levels    enable row level security;
@@ -131,65 +132,84 @@ alter table public.favorites enable row level security;
 
 -- --- PROFILES ---
 -- Anyone can read profiles (needed to show the uploader name).
+drop policy if exists "profiles_select" on public.profiles;
 create policy "profiles_select" on public.profiles for select using (true);
 -- Users can update their own name.
+drop policy if exists "profiles_update_own" on public.profiles;
 create policy "profiles_update_own" on public.profiles for update using (auth.uid() = id);
--- Admins can update any profile (change roles).
+-- Admins can update any profile (change roles / approve accounts).
+drop policy if exists "profiles_update_admin" on public.profiles;
 create policy "profiles_update_admin" on public.profiles for update using (
   exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 
 -- --- LEVELS / SUBJECTS ---
 -- Readable by everyone.
+drop policy if exists "levels_select" on public.levels;
 create policy "levels_select" on public.levels for select using (true);
+drop policy if exists "subjects_select" on public.subjects;
 create policy "subjects_select" on public.subjects for select using (true);
 -- Only admins can write.
+drop policy if exists "levels_insert_admin" on public.levels;
 create policy "levels_insert_admin" on public.levels for insert with check (
   exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
+drop policy if exists "levels_update_admin" on public.levels;
 create policy "levels_update_admin" on public.levels for update using (
   exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
+drop policy if exists "levels_delete_admin" on public.levels;
 create policy "levels_delete_admin" on public.levels for delete using (
   exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
+drop policy if exists "subjects_insert_admin" on public.subjects;
 create policy "subjects_insert_admin" on public.subjects for insert with check (
   exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
+drop policy if exists "subjects_update_admin" on public.subjects;
 create policy "subjects_update_admin" on public.subjects for update using (
   exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
+drop policy if exists "subjects_delete_admin" on public.subjects;
 create policy "subjects_delete_admin" on public.subjects for delete using (
   exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 
 -- --- DOCUMENTS ---
 -- Everyone can read approved documents.
+drop policy if exists "documents_select_public" on public.documents;
 create policy "documents_select_public" on public.documents for select using (approved = true);
 -- Teachers/admins can also see their own unapproved drafts.
+drop policy if exists "documents_select_own" on public.documents;
 create policy "documents_select_own" on public.documents for select using (
   auth.uid() = uploader_id
   or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 -- Teachers and admins can insert.
+drop policy if exists "documents_insert_teacher" on public.documents;
 create policy "documents_insert_teacher" on public.documents for insert with check (
   exists (select 1 from public.profiles p
           where p.id = auth.uid() and p.role in ('teacher','admin'))
   and auth.uid() = uploader_id
 );
 -- Teachers can update their own, admins can update any.
+drop policy if exists "documents_update_owner" on public.documents;
 create policy "documents_update_owner" on public.documents for update using (
   auth.uid() = uploader_id
   or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
+drop policy if exists "documents_delete_owner" on public.documents;
 create policy "documents_delete_owner" on public.documents for delete using (
   auth.uid() = uploader_id
   or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 
 -- --- FAVORITES ---
+drop policy if exists "favorites_select_own" on public.favorites;
 create policy "favorites_select_own" on public.favorites for select using (auth.uid() = user_id);
+drop policy if exists "favorites_insert_own" on public.favorites;
 create policy "favorites_insert_own" on public.favorites for insert with check (auth.uid() = user_id);
+drop policy if exists "favorites_delete_own" on public.favorites;
 create policy "favorites_delete_own" on public.favorites for delete using (auth.uid() = user_id);
 
 -- ============================================================
