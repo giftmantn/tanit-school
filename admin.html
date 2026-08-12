@@ -117,7 +117,7 @@
             <input type="text" id="subjectEn" class="input" required />
           </div>
           <div class="field" style="margin:0">
-            <label data-i18n="admin.level.order"></label>
+            <label data-i18n="admin.subject.order"></label>
             <input type="number" id="subjectOrd" class="input" value="0" />
           </div>
           <button type="submit" class="btn" data-i18n="admin.add"></button>
@@ -178,7 +178,7 @@
           name_fr: document.getElementById("levelFr").value.trim(),
           name_ar: document.getElementById("levelAr").value.trim(),
           name_en: document.getElementById("levelEn").value.trim(),
-          ord: parseInt(document.getElementById("levelOrd").value || "0"),
+          ord: parseInt(document.getElementById("levelOrd").value, 10) || 0,
         };
         const { error } = await sb.from("levels").insert(payload);
         if (error) { showAlert("alertBox", t("misc.error") + " (" + error.message + ")", "error"); return; }
@@ -195,7 +195,7 @@
           name_fr: document.getElementById("subjectFr").value.trim(),
           name_ar: document.getElementById("subjectAr").value.trim(),
           name_en: document.getElementById("subjectEn").value.trim(),
-          ord: parseInt(document.getElementById("subjectOrd").value || "0"),
+          ord: parseInt(document.getElementById("subjectOrd").value, 10) || 0,
         };
         const { error } = await sb.from("subjects").insert(payload);
         if (error) { showAlert("alertBox", t("misc.error") + " (" + error.message + ")", "error"); return; }
@@ -207,6 +207,9 @@
     });
 
     async function loadAll() {
+      const [l, s] = await Promise.all([fetchLevels(), fetchSubjects()]);
+      levels = l;
+      subjects = s;
       await Promise.all([loadUsers(), loadDocs(), renderLevels(), renderSubjects()]);
     }
 
