@@ -68,6 +68,26 @@
             <a href="#" id="toLogin" data-i18n="auth.have_account"></a>
           </p>
         </form>
+
+        <!-- OTP VERIFICATION FORM -->
+        <form id="otpForm" class="hidden">
+          <h2 style="margin-bottom:10px" data-i18n="auth.otp.title"></h2>
+          <p style="font-size:.9rem;color:var(--muted);margin-bottom:18px">
+            <span data-i18n="auth.otp.subtitle"></span>
+            <strong id="otpEmail"></strong>
+          </p>
+          <div class="field">
+            <label data-i18n="auth.otp.code"></label>
+            <input type="text" id="otpCode" class="input" inputmode="numeric" maxlength="6" autocomplete="one-time-code" style="text-align:center;font-size:1.4rem;letter-spacing:8px" required />
+          </div>
+          <button type="submit" class="btn btn-block btn-lg" data-i18n="auth.otp.verify"></button>
+          <p style="margin-top:14px;text-align:center;font-size:.9rem">
+            <a href="#" id="resendCode" data-i18n="auth.otp.resend"></a>
+          </p>
+          <p style="margin-top:10px;text-align:center;font-size:.85rem">
+            <a href="#" id="backToSignup" data-i18n="misc.back"></a>
+          </p>
+        </form>
       </div>
     </div>
   </main>
@@ -93,26 +113,45 @@
 
       const loginForm = document.getElementById("loginForm");
       const signupForm = document.getElementById("signupForm");
+      const otpForm = document.getElementById("otpForm");
       const tabLogin = document.getElementById("tabLogin");
       const tabSignup = document.getElementById("tabSignup");
+
+      function redirectByRole(role) {
+        window.location.href = role === "admin" ? "admin.html"
+          : role === "teacher" ? "teacher.html"
+          : "browse.html";
+      }
 
       function showLogin() {
         loginForm.classList.remove("hidden");
         signupForm.classList.add("hidden");
+        otpForm.classList.add("hidden");
         tabLogin.classList.add("active");
         tabSignup.classList.remove("active");
       }
       function showSignup() {
         loginForm.classList.add("hidden");
         signupForm.classList.remove("hidden");
+        otpForm.classList.add("hidden");
         tabSignup.classList.add("active");
         tabLogin.classList.remove("active");
+      }
+      function showOtp(email) {
+        loginForm.classList.add("hidden");
+        signupForm.classList.add("hidden");
+        otpForm.classList.remove("hidden");
+        document.getElementById("otpEmail").textContent = email;
+        tabSignup.classList.add("active");
+        tabLogin.classList.remove("active");
+        document.getElementById("otpCode").focus();
       }
 
       tabLogin.addEventListener("click", showLogin);
       tabSignup.addEventListener("click", showSignup);
       document.getElementById("toSignup").addEventListener("click", (e) => { e.preventDefault(); showSignup(); });
       document.getElementById("toLogin").addEventListener("click", (e) => { e.preventDefault(); showLogin(); });
+      document.getElementById("backToSignup").addEventListener("click", (e) => { e.preventDefault(); showSignup(); });
 
       // LOGIN
       loginForm.addEventListener("submit", async (e) => {
@@ -124,12 +163,11 @@
         const { error } = await sb.auth.signInWithPassword({ email, password });
         if (error) { showAlert("alertBox", t("auth.error.login"), "error"); return; }
         const { profile: p } = await getAuth();
-        window.location.href = p && p.role === "admin" ? "admin.html"
-          : p && p.role === "teacher" ? "teacher.html"
-          : "browse.html";
+        redirectByRole(p ? p.role : "student");
       });
 
-      // SIGNUP
+      // SIGNUP — step 1: create account, send OTP
+      let pendingSignup = null;
       signupForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         clearAlert("alertBox");
@@ -141,6 +179,7 @@
         if (!name || !email || !password || !password2) { showAlert("alertBox", t("auth.error.required"), "error"); return; }
         if (password.length < 6) { showAlert("alertBox", t("auth.error.password_short"), "error"); return; }
         if (password !== password2) { showAlert("alertBox", t("auth.error.password_mismatch"), "error"); return; }
+        pendingSignup = { name, email, password, role };
         const { data, error } = await sb.auth.signUp({
           email,
           password,
@@ -148,10 +187,42 @@
         });
         if (error) { showAlert("alertBox", t("auth.error.signup") + " (" + error.message + ")", "error"); return; }
         if (data.session) {
-          window.location.href = role === "teacher" ? "teacher.html" : "browse.html";
+          // Email confirmation disabled in the dashboard → already logged in
+          redirectByRole(role);
         } else {
-          showAlert("alertBox", t("auth.error.signup") + " - " + (t("auth.email_confirm") || ""), "success");
+          // Confirmation email sent → show the OTP step
+          showOtp(email);
         }
+      });
+
+      // SIGNUP — step 2: verify the 6-digit code
+      otpForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearAlert("alertBox");
+        const token = document.getElementById("otpCode").value.trim();
+        if (!token) { showAlert("alertBox", t("auth.otp.code_required"), "error"); return; }
+        if (!pendingSignup) return;
+        const { error } = await sb.auth.verifyOtp({
+          email: pendingSignup.email,
+          token,
+          type: "signup",
+        });
+        if (error) { showAlert("alertBox", t("auth.otp.invalid"), "error"); return; }
+        window.location.href = pendingSignup.role === "teacher" ? "teacher.html" : "browse.html";
+      });
+
+      // RESEND the OTP code
+      document.getElementById("resendCode").addEventListener("click", async (e) => {
+        e.preventDefault();
+        clearAlert("alertBox");
+        if (!pendingSignup) return;
+        const { error } = await sb.auth.resend({
+          type: "signup",
+          email: pendingSignup.email,
+          options: { data: { full_name: pendingSignup.name, role: pendingSignup.role } },
+        });
+        if (error) { showAlert("alertBox", t("auth.otp.invalid") + " (" + error.message + ")", "error"); return; }
+        showAlert("alertBox", t("auth.otp.resend_ok"), "success");
       });
     });
   </script>

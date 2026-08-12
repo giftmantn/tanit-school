@@ -55,14 +55,33 @@ window.SUPABASE_URL = "https://XXXX.supabase.co";   // votre URL
 window.SUPABASE_ANON_KEY = "eyJhbGciOi...";         // votre anon key
 ```
 
-### 3. Créer votre premier compte admin
+### 3. Activer la vérification par code (OTP) à l'inscription
+
+À l'inscription, un **code à 6 chiffres** est envoyé par e-mail pour activer le compte.
+
+1. Supabase → **Authentication** → **Sign In / Providers** → **Email** :
+   - Activez **Confirm email** (pour que le code soit requis).
+2. **Authentication** → **Emails** → onglet **Confirm signup** :
+   - Le modèle doit contenir la variable `{{ .Token }}` pour afficher le code.
+   - Exemple de modèle minimal :
+
+   ```html
+   <h2>Confirmez votre inscription</h2>
+   <p>Votre code de vérification :</p>
+   <h1>{{ .Token }}</h1>
+   <p>Ce code expire dans 10 minutes.</p>
+   ```
+
+3. Enregistrez le modèle → le site affiche désormais l'écran « Entrez le code à 6 chiffres » après l'inscription.
+
+### 4. Créer votre premier compte admin
 
 1. Sur le site, inscrivez-vous (onglet « Créer un compte »).
 2. Dans Supabase : **Table Editor** → table `profiles`.
 3. Trouvez votre ligne et changez `role` de `student` en `admin`.
 4. Reconnectez-vous → le lien « Administration » apparaît dans le menu.
 
-### 4. Mettre le site en ligne (GitHub)
+### 5. Mettre le site en ligne (GitHub)
 
 **Option A — GitHub Pages (site vitrine statique, recommandé)**
 1. Créez un dépôt sur **https://github.com/new** (par ex. `tanit-school`).
