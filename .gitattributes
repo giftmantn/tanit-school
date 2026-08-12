@@ -1,0 +1,11 @@
+# Normalize all text files to LF (repo + working tree)
+# Prevents CRLF/LF churn and the GitHub Desktop conversion warning
+* text=auto eol=lf
+
+# Binary files — Git must never normalize these
+*.pdf binary
+*.jpeg binary
+*.jpg binary
+*.png binary
+*.gif binary
+*.webp binary

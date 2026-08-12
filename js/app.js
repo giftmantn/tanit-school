@@ -291,7 +291,8 @@ function optionList(items, selectedId, nameFn) {
 }
 
 // Auth guard: redirects to auth.html if not logged in / wrong role / not approved
-async function requireRole(role) {
+// Accepts a single role ("teacher") or an array of allowed roles (["teacher","admin"]).
+async function requireRole(roles) {
   const { session, profile } = await getAuth();
   if (!session) {
     flash(t("auth.error.login"));
@@ -302,7 +303,8 @@ async function requireRole(role) {
     window.location.href = "auth.html";
     return null;
   }
-  if (role && profile.role !== role) {
+  const allowed = Array.isArray(roles) ? roles : roles ? [roles] : null;
+  if (allowed && !allowed.includes(profile.role)) {
     alert(t("admin.no_perm"));
     window.location.href = "index.html";
     return null;
