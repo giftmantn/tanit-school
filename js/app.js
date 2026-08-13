@@ -216,6 +216,17 @@ async function fetchLevelSections() {
   return map;
 }
 
+// Returns { [level_id]: [subject_id, ...] }
+async function fetchLevelSubjects() {
+  if (!sb) return {};
+  const { data } = await sb.from("level_subjects").select("level_id, subject_id");
+  const map = {};
+  (data || []).forEach((r) => {
+    (map[r.level_id] = map[r.level_id] || []).push(r.subject_id);
+  });
+  return map;
+}
+
 // Levels that carry sections (2ème, 3ème, 4ème année secondaire).
 const SECTION_LEVEL_ORDS = [11, 12, 13];
 

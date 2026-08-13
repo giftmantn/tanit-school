@@ -48,6 +48,7 @@
     let subjects = [];
     let sections = [];
     let sectionsByLevel = {};
+    let subjectsByLevel = {};
     let favIds = new Set();
     let isLoggedIn = false;
 
@@ -58,11 +59,12 @@
       isLoggedIn = !!session;
       renderNavbar(profile);
 
-      const [l, s, sec, ls] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections(), fetchLevelSections()]);
+      const [l, s, sec, ls, lsub] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections(), fetchLevelSections(), fetchLevelSubjects()]);
       levels = l;
       subjects = s;
       sections = sec;
       sectionsByLevel = ls;
+      subjectsByLevel = lsub;
       populateFilters();
       if (session) favIds = await loadFavIds();
       await loadDocs();
@@ -76,7 +78,7 @@
         optionList(levels, null, (l) => l[`name_${getLang()}`] || l.name_fr);
       subjectSel.innerHTML = `<option value="">${t("browse.all_subjects")}</option>` +
         optionList(subjects, null, (s) => s[`name_${getLang()}`] || s.name_fr);
-      levelSel.addEventListener("change", () => { updateSectionFilter(); render(); });
+      levelSel.addEventListener("change", () => { updateSectionFilter(); updateSubjectFilter(); render(); });
       subjectSel.addEventListener("change", render);
       sectionSel.addEventListener("change", render);
       document.getElementById("searchInput").addEventListener("input", render);
@@ -86,9 +88,22 @@
         sectionSel.value = "";
         sectionSel.style.display = "none";
         document.getElementById("searchInput").value = "";
+        updateSubjectFilter();
         render();
       });
       updateSectionFilter();
+      updateSubjectFilter();
+    }
+
+    // Restrict the subject filter to the subjects offered by the chosen level.
+    function updateSubjectFilter() {
+      const lv = document.getElementById("levelFilter").value;
+      const subjectSel = document.getElementById("subjectFilter");
+      subjectSel.value = "";
+      const ids = lv ? (subjectsByLevel[lv] || []) : [];
+      const list = (!lv || !ids.length) ? subjects : subjects.filter((s) => ids.includes(s.id));
+      subjectSel.innerHTML = `<option value="">${t("browse.all_subjects")}</option>` +
+        optionList(list, null, (s) => s[`name_${getLang()}`] || s.name_fr);
     }
 
     // Show the section filter only when the chosen level actually has sections.

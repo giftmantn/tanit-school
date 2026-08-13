@@ -149,6 +149,54 @@ on conflict do nothing;
 -- Documents can optionally belong to a section (only meaningful for levels that have sections).
 alter table public.documents add column if not exists section_id uuid references public.sections(id) on delete set null;
 
+-- ---------- LEVEL_SUBJECTS (which subjects each level offers) ----------
+create table if not exists public.level_subjects (
+  level_id uuid references public.levels(id) on delete cascade,
+  subject_id uuid references public.subjects(id) on delete cascade,
+  primary key (level_id, subject_id)
+);
+
+-- Reasonable default mapping (tune it afterwards from the admin panel):
+--   Primary   (ord 1-6):   Math, Français, Arabe, Anglais, SVT, Histoire-Géo, Éduc. islamique, Informatique, Autre
+--   Collège   (ord 7-9):   + Physique, Chimie
+--   Secondaire (ord 10-13): all subjects
+insert into public.level_subjects (level_id, subject_id)
+select l.id, s.id
+from public.levels l
+cross join public.subjects s
+where (
+  (l.ord between 1 and 6  and s.ord in (1,2,3,4,7,8,9,11,12)) or
+  (l.ord between 7 and 9  and s.ord in (1,2,3,4,5,6,7,8,9,11,12)) or
+  (l.ord between 10 and 13)
+)
+on conflict do nothing;
+
+-- A document's subject must be offered by the chosen level — but only when
+-- the level actually restricts subjects (has rows in level_subjects).
+-- Same trigger pattern as sections.
+create or replace function public.check_document_subject()
+returns trigger
+language plpgsql security definer set search_path = public
+as $$
+begin
+  if new.subject_id is not null and new.level_id is not null
+     and exists (select 1 from public.level_subjects ls where ls.level_id = new.level_id)
+     and not exists (
+       select 1 from public.level_subjects ls
+       where ls.level_id = new.level_id and ls.subject_id = new.subject_id
+     )
+  then
+    raise exception 'Subject is not available for this level';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists document_subject_check on public.documents;
+create trigger document_subject_check
+  before insert or update on public.documents
+  for each row execute procedure public.check_document_subject();
+
 -- Enforce that a document's section (if any) is actually offered by the chosen level.
 -- RLS policies cannot reference NEW inside subqueries, so this lives in a trigger.
 create or replace function public.check_document_section()
@@ -208,6 +256,7 @@ alter table public.levels    enable row level security;
 alter table public.subjects  enable row level security;
 alter table public.sections  enable row level security;
 alter table public.level_sections enable row level security;
+alter table public.level_subjects enable row level security;
 alter table public.documents enable row level security;
 alter table public.favorites enable row level security;
 
@@ -281,6 +330,18 @@ create policy "level_sections_insert_admin" on public.level_sections for insert 
 );
 drop policy if exists "level_sections_delete_admin" on public.level_sections;
 create policy "level_sections_delete_admin" on public.level_sections for delete using (
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+);
+
+-- --- LEVEL_SUBJECTS (junction) ---
+drop policy if exists "level_subjects_select" on public.level_subjects;
+create policy "level_subjects_select" on public.level_subjects for select using (true);
+drop policy if exists "level_subjects_insert_admin" on public.level_subjects;
+create policy "level_subjects_insert_admin" on public.level_subjects for insert with check (
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+);
+drop policy if exists "level_subjects_delete_admin" on public.level_subjects;
+create policy "level_subjects_delete_admin" on public.level_subjects for delete using (
   exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 

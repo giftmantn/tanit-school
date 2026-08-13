@@ -144,6 +144,7 @@
     let subjects = [];
     let sections = [];
     let sectionsByLevel = {};
+    let subjectsByLevel = {};
     let editingId = null;
 
     function toggleDocTypeOther() {
@@ -159,17 +160,18 @@
       if (!auth) return;
       renderNavbar(auth.profile);
 
-      const [l, s, sec, ls] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections(), fetchLevelSections()]);
+      const [l, s, sec, ls, lsub] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections(), fetchLevelSections(), fetchLevelSubjects()]);
       levels = l;
       subjects = s;
       sections = sec;
       sectionsByLevel = ls;
+      subjectsByLevel = lsub;
 
       const levelSel = document.getElementById("levelSelect");
       const subjectSel = document.getElementById("subjectSelect");
       levelSel.innerHTML = optionList(levels, null, (x) => x[`name_${getLang()}`] || x.name_fr);
-      subjectSel.innerHTML = optionList(subjects, null, (x) => x[`name_${getLang()}`] || x.name_fr);
-      levelSel.addEventListener("change", updateSectionSelect);
+      updateSubjectSelect();
+      levelSel.addEventListener("change", () => { updateSectionSelect(); updateSubjectSelect(); });
       updateSectionSelect();
 
       document.getElementById("docType").addEventListener("change", toggleDocTypeOther);
@@ -319,6 +321,23 @@
       }
     }
 
+    // Restrict the subject list to the subjects offered by the chosen level.
+    // Falls back to all subjects when no level is selected or the level has no
+    // restricted list. keepId preserves an already-chosen subject when editing.
+    function updateSubjectSelect(keepId) {
+      const sel = document.getElementById("subjectSelect");
+      const levelId = document.getElementById("levelSelect").value;
+      let list = subjects;
+      if (levelId && (subjectsByLevel[levelId] || []).length) {
+        list = subjects.filter((s) => subjectsByLevel[levelId].includes(s.id));
+      }
+      if (keepId && !list.some((s) => s.id === keepId)) {
+        const extra = subjects.find((s) => s.id === keepId);
+        if (extra) list = [...list, extra];
+      }
+      sel.innerHTML = optionList(list, keepId || null, (s) => s[`name_${getLang()}`] || s.name_fr);
+    }
+
     async function loadMyDocs() {
       const { data } = await sb
         .from("documents")
@@ -371,6 +390,7 @@
       document.getElementById("levelSelect").value = d.level_id;
       document.getElementById("subjectSelect").value = d.subject_id;
       updateSectionSelect();
+      updateSubjectSelect(d.subject_id);
       document.getElementById("sectionSelect").value = d.section_id || "";
       document.getElementById("driveUrl").value = d.drive_url;
       document.getElementById("submitBtn").textContent = t("admin.save");
@@ -384,6 +404,7 @@
       document.getElementById("docType").value = "cours";
       toggleDocTypeOther();
       updateSectionSelect();
+      updateSubjectSelect();
       document.getElementById("submitBtn").textContent = t("teacher.doc.submit");
       document.getElementById("cancelEdit").classList.add("hidden");
     }
