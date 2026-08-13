@@ -115,6 +115,14 @@ function driveThumbUrl(url) {
   return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w400` : "";
 }
 
+// Label for a document type, translated to the current language.
+function docTypeLabel(doc) {
+  const type = doc.doc_type || "cours";
+  let label = t("teacher.doc.type." + type) || type;
+  if (type === "autre" && doc.doc_type_other) label += " — " + doc.doc_type_other;
+  return label;
+}
+
 // ---------- Document card ----------
 function docCard(doc, levels, subjects, sections, favIds, isLoggedIn) {
   const level = levels.find((l) => l.id === doc.level_id);
@@ -137,6 +145,7 @@ function docCard(doc, levels, subjects, sections, favIds, isLoggedIn) {
     <div class="doc-body">
       <div class="doc-title">${escapeHtml(title)}</div>
       <div class="doc-meta">
+        ${doc.doc_type ? `<span class="chip">${escapeHtml(docTypeLabel(doc))}</span>` : ""}
         ${level ? `<span class="chip primary">${escapeHtml(level[`name_${lang}`] || level.name_fr)}</span>` : ""}
         ${subject ? `<span class="chip accent">${escapeHtml(subject[`name_${lang}`] || subject.name_fr)}</span>` : ""}
         ${section ? `<span class="chip neutral">${escapeHtml(section[`name_${lang}`] || section.name_fr)}</span>` : ""}

@@ -180,6 +180,8 @@ create table if not exists public.documents (
   desc_fr text default '',
   desc_ar text default '',
   desc_en text default '',
+  doc_type text not null default 'cours',
+  doc_type_other text,
   level_id uuid references public.levels(id) on delete set null,
   subject_id uuid references public.subjects(id) on delete set null,
   drive_url text not null,
