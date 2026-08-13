@@ -116,9 +116,10 @@ function driveThumbUrl(url) {
 }
 
 // ---------- Document card ----------
-function docCard(doc, levels, subjects, favIds, isLoggedIn) {
+function docCard(doc, levels, subjects, sections, favIds, isLoggedIn) {
   const level = levels.find((l) => l.id === doc.level_id);
   const subject = subjects.find((s) => s.id === doc.subject_id);
+  const section = sections.find((s) => s.id === doc.section_id);
   const lang = getLang();
   const title = doc[`title_${lang}`] || doc.title_fr;
   const faved = favIds.has(doc.id);
@@ -138,6 +139,7 @@ function docCard(doc, levels, subjects, favIds, isLoggedIn) {
       <div class="doc-meta">
         ${level ? `<span class="chip primary">${escapeHtml(level[`name_${lang}`] || level.name_fr)}</span>` : ""}
         ${subject ? `<span class="chip accent">${escapeHtml(subject[`name_${lang}`] || subject.name_fr)}</span>` : ""}
+        ${section ? `<span class="chip neutral">${escapeHtml(section[`name_${lang}`] || section.name_fr)}</span>` : ""}
       </div>
       <div class="doc-footer">
         <a class="btn btn-sm" href="document.html?id=${doc.id}">${t("doc.open")}</a>
@@ -186,6 +188,27 @@ async function fetchSubjects() {
   const { data } = await sb.from("subjects").select("*").order("ord");
   return data || [];
 }
+
+// Sections (filières) — only meaningful for 2ème→4ème secondaire.
+async function fetchSections() {
+  if (!sb) return [];
+  const { data } = await sb.from("sections").select("*").order("ord");
+  return data || [];
+}
+
+// Returns { [level_id]: [section_id, ...] }
+async function fetchLevelSections() {
+  if (!sb) return {};
+  const { data } = await sb.from("level_sections").select("level_id, section_id");
+  const map = {};
+  (data || []).forEach((r) => {
+    (map[r.level_id] = map[r.level_id] || []).push(r.section_id);
+  });
+  return map;
+}
+
+// Levels that carry sections (2ème, 3ème, 4ème année secondaire).
+const SECTION_LEVEL_ORDS = [11, 12, 13];
 
 // ---------- Shared navbar / footer ----------
 function renderNavbar(profile) {

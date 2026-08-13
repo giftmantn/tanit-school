@@ -20,6 +20,7 @@
       <button data-tab="documents" data-i18n="admin.tab.documents"></button>
       <button data-tab="levels" data-i18n="admin.tab.levels"></button>
       <button data-tab="subjects" data-i18n="admin.tab.subjects"></button>
+      <button data-tab="sections" data-i18n="admin.tab.sections"></button>
     </div>
 
     <div id="alertBox" class="alert"></div>
@@ -138,6 +139,49 @@
         </table>
       </div>
     </div>
+    <!-- SECTIONS -->
+    <div id="tab-sections" class="hidden">
+      <div class="card" style="margin-bottom:20px">
+        <form id="sectionForm" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;align-items:end">
+          <div class="field" style="margin:0">
+            <label data-i18n="admin.section.name_fr"></label>
+            <input type="text" id="sectionFr" class="input" required />
+          </div>
+          <div class="field" style="margin:0">
+            <label data-i18n="admin.section.name_ar"></label>
+            <input type="text" id="sectionAr" class="input" required />
+          </div>
+          <div class="field" style="margin:0">
+            <label data-i18n="admin.section.name_en"></label>
+            <input type="text" id="sectionEn" class="input" required />
+          </div>
+          <div class="field" style="margin:0">
+            <label data-i18n="admin.section.order"></label>
+            <input type="number" id="sectionOrd" class="input" value="0" />
+          </div>
+          <button type="submit" class="btn" data-i18n="admin.add"></button>
+        </form>
+        <div class="field" style="margin-top:12px">
+          <label data-i18n="admin.section.levels"></label>
+          <div id="sectionLevelBox" style="display:flex;flex-wrap:wrap;gap:10px"></div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th data-i18n="admin.section.name_fr"></th>
+              <th data-i18n="admin.section.name_ar"></th>
+              <th data-i18n="admin.section.name_en"></th>
+              <th data-i18n="admin.section.order"></th>
+              <th data-i18n="admin.section.levels"></th>
+              <th data-i18n="admin.actions"></th>
+            </tr>
+          </thead>
+          <tbody id="sectionsBody"></tbody>
+        </table>
+      </div>
+    </div>
   </main>
 
   <footer id="footer"></footer>
@@ -150,6 +194,8 @@
     let auth = null;
     let levels = [];
     let subjects = [];
+    let sections = [];
+    let sectionsByLevel = {};
 
     document.addEventListener("DOMContentLoaded", async () => {
       initSupabase();
@@ -163,7 +209,7 @@
         b.addEventListener("click", () => {
           document.querySelectorAll(".tabs button").forEach((x) => x.classList.remove("active"));
           b.classList.add("active");
-          ["users", "documents", "levels", "subjects"].forEach((tab) => {
+          ["users", "documents", "levels", "subjects", "sections"].forEach((tab) => {
             document.getElementById("tab-" + tab).classList.toggle("hidden", tab !== b.dataset.tab);
           });
         });
@@ -204,13 +250,41 @@
         subjects = await fetchSubjects();
         renderSubjects();
       });
+
+      document.getElementById("sectionForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearAlert("alertBox");
+        const payload = {
+          name_fr: document.getElementById("sectionFr").value.trim(),
+          name_ar: document.getElementById("sectionAr").value.trim(),
+          name_en: document.getElementById("sectionEn").value.trim(),
+          ord: parseInt(document.getElementById("sectionOrd").value, 10) || 0,
+        };
+        const { data: sec, error } = await sb.from("sections").insert(payload).select().single();
+        if (error) { showAlert("alertBox", t("misc.error") + " (" + error.message + ")", "error"); return; }
+        const levelIds = [...document.querySelectorAll("#sectionLevelBox input:checked")].map((i) => i.value);
+        if (levelIds.length) {
+          const { error: jerr } = await sb.from("level_sections").insert(
+            levelIds.map((level_id) => ({ level_id, section_id: sec.id }))
+          );
+          if (jerr) { showAlert("alertBox", t("misc.error") + " (" + jerr.message + ")", "error"); return; }
+        }
+        e.target.reset();
+        showAlert("alertBox", t("admin.saved"), "success");
+        sections = await fetchSections();
+        sectionsByLevel = await fetchLevelSections();
+        renderSections();
+        renderSectionLevelChecks();
+      });
     });
 
     async function loadAll() {
-      const [l, s] = await Promise.all([fetchLevels(), fetchSubjects()]);
+      const [l, s, sec, ls] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections(), fetchLevelSections()]);
       levels = l;
       subjects = s;
-      await Promise.all([loadUsers(), loadDocs(), renderLevels(), renderSubjects()]);
+      sections = sec;
+      sectionsByLevel = ls;
+      await Promise.all([loadUsers(), loadDocs(), renderLevels(), renderSubjects(), renderSections(), renderSectionLevelChecks()]);
     }
 
     async function loadUsers() {
@@ -349,6 +423,42 @@
         });
         tbody.appendChild(tr);
       });
+    }
+    function renderSections() {
+      const tbody = document.getElementById("sectionsBody");
+      tbody.innerHTML = "";
+      sections.forEach((sec) => {
+        const assigned = levels.filter((l) => (sectionsByLevel[l.id] || []).includes(sec.id));
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(sec.name_fr)}</td>
+          <td>${escapeHtml(sec.name_ar)}</td>
+          <td>${escapeHtml(sec.name_en)}</td>
+          <td>${sec.ord}</td>
+          <td>${assigned.length ? escapeHtml(assigned.map((l) => l[`name_${getLang()}`] || l.name_fr).join(", ")) : "-"}</td>
+          <td><button class="btn btn-sm btn-accent del-section" data-id="${sec.id}">${t("admin.delete")}</button></td>`;
+        tr.querySelector(".del-section").addEventListener("click", async () => {
+          if (!confirm(t("misc.confirm_delete"))) return;
+          await sb.from("sections").delete().eq("id", sec.id);
+          sections = await fetchSections();
+          sectionsByLevel = await fetchLevelSections();
+          renderSections();
+          renderSectionLevelChecks();
+          showAlert("alertBox", t("admin.deleted"), "success");
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Checkboxes in the "add section" form: one per secondary level (2ème→4ème).
+    function renderSectionLevelChecks() {
+      const box = document.getElementById("sectionLevelBox");
+      if (!box) return;
+      const candidates = levels.filter((l) => SECTION_LEVEL_ORDS.includes(l.ord));
+      box.innerHTML = candidates.map((l) => `
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:.9rem">
+          <input type="checkbox" value="${l.id}" checked /> ${escapeHtml(l[`name_${getLang()}`] || l.name_fr)}
+        </label>`).join("") || `<span style="color:var(--muted)">-</span>`;
     }
   </script>
 </body>

@@ -36,7 +36,7 @@
       if (!auth) return;
       renderNavbar(auth.profile);
 
-      const [levels, subjects] = await Promise.all([fetchLevels(), fetchSubjects()]);
+      const [levels, subjects, sections] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections()]);
       const favIds = await loadFavIds();
 
       const { data: favs } = await sb.from("favorites").select("document_id").eq("user_id", auth.session.user.id);
@@ -49,7 +49,7 @@
         return;
       }
       const { data: docs } = await sb.from("documents").select("*").in("id", ids).order("created_at", { ascending: false });
-      (docs || []).forEach((d) => results.appendChild(docCard(d, levels, subjects, favIds, true)));
+      (docs || []).forEach((d) => results.appendChild(docCard(d, levels, subjects, sections, favIds, true)));
     });
   </script>
 </body>

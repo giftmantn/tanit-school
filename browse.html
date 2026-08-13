@@ -26,6 +26,7 @@
     <div class="filters">
       <select id="levelFilter" class="input"></select>
       <select id="subjectFilter" class="input"></select>
+      <select id="sectionFilter" class="input" style="display:none"></select>
     </div>
 
     <div id="results" class="card-row"></div>
@@ -45,6 +46,8 @@
     let allDocs = [];
     let levels = [];
     let subjects = [];
+    let sections = [];
+    let sectionsByLevel = {};
     let favIds = new Set();
     let isLoggedIn = false;
 
@@ -55,9 +58,11 @@
       isLoggedIn = !!session;
       renderNavbar(profile);
 
-      const [l, s] = await Promise.all([fetchLevels(), fetchSubjects()]);
+      const [l, s, sec, ls] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections(), fetchLevelSections()]);
       levels = l;
       subjects = s;
+      sections = sec;
+      sectionsByLevel = ls;
       populateFilters();
       if (session) favIds = await loadFavIds();
       await loadDocs();
@@ -66,19 +71,41 @@
     function populateFilters() {
       const levelSel = document.getElementById("levelFilter");
       const subjectSel = document.getElementById("subjectFilter");
+      const sectionSel = document.getElementById("sectionFilter");
       levelSel.innerHTML = `<option value="">${t("browse.all_levels")}</option>` +
         optionList(levels, null, (l) => l[`name_${getLang()}`] || l.name_fr);
       subjectSel.innerHTML = `<option value="">${t("browse.all_subjects")}</option>` +
         optionList(subjects, null, (s) => s[`name_${getLang()}`] || s.name_fr);
-      levelSel.addEventListener("change", render);
+      levelSel.addEventListener("change", () => { updateSectionFilter(); render(); });
       subjectSel.addEventListener("change", render);
+      sectionSel.addEventListener("change", render);
       document.getElementById("searchInput").addEventListener("input", render);
       document.getElementById("clearFilters").addEventListener("click", () => {
         levelSel.value = "";
         subjectSel.value = "";
+        sectionSel.value = "";
+        sectionSel.style.display = "none";
         document.getElementById("searchInput").value = "";
         render();
       });
+      updateSectionFilter();
+    }
+
+    // Show the section filter only when the chosen level actually has sections.
+    function updateSectionFilter() {
+      const lv = document.getElementById("levelFilter").value;
+      const secIds = sectionsByLevel[lv] || [];
+      const sectionSel = document.getElementById("sectionFilter");
+      sectionSel.value = "";
+      if (secIds.length) {
+        const available = sections.filter((s) => secIds.includes(s.id));
+        sectionSel.innerHTML = `<option value="">${t("browse.all_sections")}</option>` +
+          optionList(available, null, (s) => s[`name_${getLang()}`] || s.name_fr);
+        sectionSel.style.display = "";
+      } else {
+        sectionSel.innerHTML = "";
+        sectionSel.style.display = "none";
+      }
     }
 
     async function loadDocs() {
@@ -91,11 +118,13 @@
       const q = document.getElementById("searchInput").value.trim().toLowerCase();
       const lv = document.getElementById("levelFilter").value;
       const sub = document.getElementById("subjectFilter").value;
+      const sec = document.getElementById("sectionFilter").value;
       const lang = getLang();
 
       const filtered = allDocs.filter((d) => {
         if (lv && d.level_id !== lv) return false;
         if (sub && d.subject_id !== sub) return false;
+        if (sec && d.section_id !== sec) return false;
         if (q) {
           const hay = [d.title_fr, d.title_ar, d.title_en, d.desc_fr, d.desc_ar, d.desc_en].join(" ").toLowerCase();
           if (!hay.includes(q)) return false;
@@ -113,7 +142,7 @@
       }
       empty.classList.add("hidden");
       document.getElementById("clearFilters").style.display = "inline-flex";
-      filtered.forEach((d) => results.appendChild(docCard(d, levels, subjects, favIds, isLoggedIn)));
+      filtered.forEach((d) => results.appendChild(docCard(d, levels, subjects, sections, favIds, isLoggedIn)));
     }
   </script>
 </body>

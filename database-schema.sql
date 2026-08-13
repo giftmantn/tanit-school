@@ -70,6 +70,12 @@ insert into public.levels (name_fr, name_ar, name_en, ord) values
   ('4ème année - Bac',      'سنة رابعة - باكالوريا', '4th year - Bac',       13)
 on conflict do nothing;
 
+-- Levels are grouped: primary/middle ("Base") vs secondary ("secondaire").
+-- (Mirrors the group_level column already present in the live database.)
+alter table public.levels add column if not exists group_level text;
+update public.levels set group_level = case when ord <= 9 then 'Base' else 'secondaire' end
+where group_level is null;
+
 -- ---------- SUBJECTS ----------
 create table if not exists public.subjects (
   id uuid primary key default gen_random_uuid(),
@@ -93,6 +99,43 @@ insert into public.subjects (name_fr, name_ar, name_en, ord) values
   ('Informatique',         'إعلامية',       'Computer science',  11),
   ('Autre',                'أخرى',          'Other',             12)
 on conflict do nothing;
+
+-- ---------- SECTIONS (filières : 2ème → 4ème secondaire) ----------
+create table if not exists public.sections (
+  id uuid primary key default gen_random_uuid(),
+  name_fr text not null unique,
+  name_ar text not null,
+  name_en text not null,
+  ord int default 0
+);
+
+insert into public.sections (name_fr, name_ar, name_en, ord) values
+  ('Sciences',            'علوم',           'Sciences',              1),
+  ('Mathématiques',       'رياضيات',        'Mathematics',           2),
+  ('Économie & Gestion',  'اقتصاد وتصرّف',   'Economics & Management', 3),
+  ('Lettres',             'آداب',           'Letters',               4),
+  ('Informatique',        'إعلامية',         'Computer science',      5),
+  ('Technique',           'تقنّي',          'Technical',             6)
+on conflict do nothing;
+
+-- Which levels offer which sections (junction).
+-- All 3 secondary years share the same 6 sections, hence the junction table.
+create table if not exists public.level_sections (
+  level_id uuid references public.levels(id) on delete cascade,
+  section_id uuid references public.sections(id) on delete cascade,
+  primary key (level_id, section_id)
+);
+
+-- 2ème, 3ème et 4ème année secondaire (ord 11, 12, 13) have every section.
+insert into public.level_sections (level_id, section_id)
+select l.id, s.id
+from public.levels l
+cross join public.sections s
+where l.ord in (11, 12, 13)
+on conflict do nothing;
+
+-- Documents can optionally belong to a section (only meaningful for levels that have sections).
+alter table public.documents add column if not exists section_id uuid references public.sections(id) on delete set null;
 
 -- ---------- DOCUMENTS ----------
 create table if not exists public.documents (
@@ -127,6 +170,8 @@ create table if not exists public.favorites (
 alter table public.profiles  enable row level security;
 alter table public.levels    enable row level security;
 alter table public.subjects  enable row level security;
+alter table public.sections  enable row level security;
+alter table public.level_sections enable row level security;
 alter table public.documents enable row level security;
 alter table public.favorites enable row level security;
 
@@ -175,6 +220,34 @@ create policy "subjects_delete_admin" on public.subjects for delete using (
   exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 
+-- --- SECTIONS ---
+drop policy if exists "sections_select" on public.sections;
+create policy "sections_select" on public.sections for select using (true);
+drop policy if exists "sections_insert_admin" on public.sections;
+create policy "sections_insert_admin" on public.sections for insert with check (
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+);
+drop policy if exists "sections_update_admin" on public.sections;
+create policy "sections_update_admin" on public.sections for update using (
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+);
+drop policy if exists "sections_delete_admin" on public.sections;
+create policy "sections_delete_admin" on public.sections for delete using (
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+);
+
+-- --- LEVEL_SECTIONS (junction) ---
+drop policy if exists "level_sections_select" on public.level_sections;
+create policy "level_sections_select" on public.level_sections for select using (true);
+drop policy if exists "level_sections_insert_admin" on public.level_sections;
+create policy "level_sections_insert_admin" on public.level_sections for insert with check (
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+);
+drop policy if exists "level_sections_delete_admin" on public.level_sections;
+create policy "level_sections_delete_admin" on public.level_sections for delete using (
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+);
+
 -- --- DOCUMENTS ---
 -- Everyone can read approved documents.
 drop policy if exists "documents_select_public" on public.documents;
@@ -185,18 +258,28 @@ create policy "documents_select_own" on public.documents for select using (
   auth.uid() = uploader_id
   or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
--- Teachers and admins can insert.
+-- Teachers and admins can insert. The section (if any) must match the level:
+-- a section is only allowed if level_sections links it to the chosen level.
 drop policy if exists "documents_insert_teacher" on public.documents;
 create policy "documents_insert_teacher" on public.documents for insert with check (
   exists (select 1 from public.profiles p
           where p.id = auth.uid() and p.role in ('teacher','admin'))
   and auth.uid() = uploader_id
+  and (new.section_id is null or exists (
+    select 1 from public.level_sections ls
+    where ls.level_id = new.level_id and ls.section_id = new.section_id
+  ))
 );
 -- Teachers can update their own, admins can update any.
 drop policy if exists "documents_update_owner" on public.documents;
 create policy "documents_update_owner" on public.documents for update using (
   auth.uid() = uploader_id
   or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+) with check (
+  (new.section_id is null or exists (
+    select 1 from public.level_sections ls
+    where ls.level_id = new.level_id and ls.section_id = new.section_id
+  ))
 );
 drop policy if exists "documents_delete_owner" on public.documents;
 create policy "documents_delete_owner" on public.documents for delete using (

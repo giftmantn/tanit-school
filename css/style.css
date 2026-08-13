@@ -317,6 +317,7 @@ textarea { min-height: 80px; resize: vertical; }
 }
 .chip.primary { background: var(--primary-light); color: var(--primary); }
 .chip.accent { background: var(--accent-light); color: var(--accent); }
+.chip.neutral { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
 .doc-footer {
   margin-top: auto;
   display: flex;

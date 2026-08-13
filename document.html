@@ -41,9 +41,10 @@
         return;
       }
 
-      const [levels, subjects] = await Promise.all([fetchLevels(), fetchSubjects()]);
+      const [levels, subjects, sections] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections()]);
       const level = levels.find((l) => l.id === doc.level_id);
       const subject = subjects.find((s) => s.id === doc.subject_id);
+      const section = sections.find((s) => s.id === doc.section_id);
       const lang = getLang();
       const title = doc[`title_${lang}`] || doc.title_fr;
       const desc = doc[`desc_${lang}`] || doc.desc_fr;
@@ -69,6 +70,7 @@
             <div class="doc-meta" style="margin-top:10px">
               ${level ? `<span class="chip primary">${escapeHtml(level[`name_${lang}`] || level.name_fr)}</span>` : ""}
               ${subject ? `<span class="chip accent">${escapeHtml(subject[`name_${lang}`] || subject.name_fr)}</span>` : ""}
+              ${section ? `<span class="chip neutral">${escapeHtml(section[`name_${lang}`] || section.name_fr)}</span>` : ""}
               <span class="chip">${t("doc.uploaded_by")}: ${escapeHtml(uploader)}</span>
             </div>
           </div>
