@@ -45,16 +45,16 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
               <div class="field">
                 <label data-i18n="teacher.doc.desc_fr"></label>
-                <textarea id="descFr" class="input"></textarea>
+                <textarea id="descFr" class="input" required></textarea>
               </div>
               <div class="field">
                 <label data-i18n="teacher.doc.desc_ar"></label>
-                <textarea id="descAr" class="input"></textarea>
+                <textarea id="descAr" class="input" required></textarea>
               </div>
             </div>
             <div class="field">
               <label data-i18n="teacher.doc.desc_en"></label>
-              <textarea id="descEn" class="input"></textarea>
+              <textarea id="descEn" class="input" required></textarea>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
               <div class="field">
@@ -190,6 +190,32 @@
 
       document.getElementById("cancelEdit").addEventListener("click", resetForm);
     });
+
+    // Auto-translate the empty language fields as the teacher types in one language.
+    // Only empty fields are filled, so manual text is never overwritten.
+    function wireAutoTranslate(sourceId, targets) {
+      document.getElementById(sourceId).addEventListener("input", () => {
+        clearTimeout(window.__transTimer);
+        window.__transTimer = setTimeout(async () => {
+          const text = document.getElementById(sourceId).value.trim();
+          if (!text) return;
+          for (const t of targets) {
+            const el = document.getElementById(t.id);
+            if (!el.value.trim()) {
+              const out = await translateText(text, t.lang);
+              if (out) el.value = out;
+            }
+          }
+        }, 700);
+      });
+    }
+
+    wireAutoTranslate("titleFr", [{ id: "titleAr", lang: "ar" }, { id: "titleEn", lang: "en" }]);
+    wireAutoTranslate("titleAr", [{ id: "titleFr", lang: "fr" }, { id: "titleEn", lang: "en" }]);
+    wireAutoTranslate("titleEn", [{ id: "titleFr", lang: "fr" }, { id: "titleAr", lang: "ar" }]);
+    wireAutoTranslate("descFr", [{ id: "descAr", lang: "ar" }, { id: "descEn", lang: "en" }]);
+    wireAutoTranslate("descAr", [{ id: "descFr", lang: "fr" }, { id: "descEn", lang: "en" }]);
+    wireAutoTranslate("descEn", [{ id: "descFr", lang: "fr" }, { id: "descAr", lang: "ar" }]);
 
     // Show the section select only when the chosen level has sections.
     function updateSectionSelect() {

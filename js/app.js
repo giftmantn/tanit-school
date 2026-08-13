@@ -296,6 +296,24 @@ function renderFooter() {
 }
 
 // ---------- Misc helpers ----------
+// Free client-side translation (Google's public translate endpoint).
+// Returns null on failure so callers can silently skip.
+async function translateText(text, toLang) {
+  try {
+    const url =
+      "https://translate.googleapis.com/translate_a/single?client=gtx" +
+      "&sl=auto&tl=" + encodeURIComponent(toLang) +
+      "&dt=t&q=" + encodeURIComponent(text);
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data || !Array.isArray(data[0])) return null;
+    return data[0].map((seg) => seg[0]).join("").trim() || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 function escapeHtml(str) {
   if (str == null) return "";
   return String(str)
