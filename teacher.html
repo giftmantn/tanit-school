@@ -145,6 +145,7 @@
     let sections = [];
     let sectionsByLevel = {};
     let subjectsByLevel = {};
+    let subjectsBySection = {};
     let editingId = null;
 
     function toggleDocTypeOther() {
@@ -160,12 +161,13 @@
       if (!auth) return;
       renderNavbar(auth.profile);
 
-      const [l, s, sec, ls, lsub] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections(), fetchLevelSections(), fetchLevelSubjects()]);
+      const [l, s, sec, ls, lsub, ssub] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections(), fetchLevelSections(), fetchLevelSubjects(), fetchSectionSubjects()]);
       levels = l;
       subjects = s;
       sections = sec;
       sectionsByLevel = ls;
       subjectsByLevel = lsub;
+      subjectsBySection = ssub;
 
       const levelSel = document.getElementById("levelSelect");
       const subjectSel = document.getElementById("subjectSelect");
@@ -173,6 +175,7 @@
       updateSubjectSelect();
       levelSel.addEventListener("change", () => { updateSectionSelect(); updateSubjectSelect(); });
       updateSectionSelect();
+      document.getElementById("sectionSelect").addEventListener("change", () => updateSubjectSelect());
 
       document.getElementById("docType").addEventListener("change", toggleDocTypeOther);
       toggleDocTypeOther();
@@ -321,16 +324,21 @@
       }
     }
 
-    // Restrict the subject list to the subjects offered by the chosen level.
-    // Falls back to all subjects when no level is selected or the level has no
-    // restricted list. keepId preserves an already-chosen subject when editing.
+    // Restrict the subject list to the subjects offered by the chosen level
+    // and section. A section's subject list takes precedence over the level's;
+    // falls back to all subjects when neither restricts. keepId preserves an
+    // already-chosen subject when editing.
     function updateSubjectSelect(keepId) {
       const sel = document.getElementById("subjectSelect");
       const levelId = document.getElementById("levelSelect").value;
-      let list = subjects;
-      if (levelId && (subjectsByLevel[levelId] || []).length) {
-        list = subjects.filter((s) => subjectsByLevel[levelId].includes(s.id));
+      const sectionId = document.getElementById("sectionSelect").value;
+      let ids = [];
+      if (sectionId && (subjectsBySection[sectionId] || []).length) {
+        ids = subjectsBySection[sectionId];
+      } else if (levelId && (subjectsByLevel[levelId] || []).length) {
+        ids = subjectsByLevel[levelId];
       }
+      let list = ids.length ? subjects.filter((s) => ids.includes(s.id)) : subjects;
       if (keepId && !list.some((s) => s.id === keepId)) {
         const extra = subjects.find((s) => s.id === keepId);
         if (extra) list = [...list, extra];
@@ -388,10 +396,9 @@
       document.getElementById("docTypeOther").value = d.doc_type_other || "";
       toggleDocTypeOther();
       document.getElementById("levelSelect").value = d.level_id;
-      document.getElementById("subjectSelect").value = d.subject_id;
       updateSectionSelect();
-      updateSubjectSelect(d.subject_id);
       document.getElementById("sectionSelect").value = d.section_id || "";
+      updateSubjectSelect(d.subject_id);
       document.getElementById("driveUrl").value = d.drive_url;
       document.getElementById("submitBtn").textContent = t("admin.save");
       document.getElementById("cancelEdit").classList.remove("hidden");

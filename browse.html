@@ -49,6 +49,7 @@
     let sections = [];
     let sectionsByLevel = {};
     let subjectsByLevel = {};
+    let subjectsBySection = {};
     let favIds = new Set();
     let isLoggedIn = false;
 
@@ -59,12 +60,13 @@
       isLoggedIn = !!session;
       renderNavbar(profile);
 
-      const [l, s, sec, ls, lsub] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections(), fetchLevelSections(), fetchLevelSubjects()]);
+      const [l, s, sec, ls, lsub, ssub] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections(), fetchLevelSections(), fetchLevelSubjects(), fetchSectionSubjects()]);
       levels = l;
       subjects = s;
       sections = sec;
       sectionsByLevel = ls;
       subjectsByLevel = lsub;
+      subjectsBySection = ssub;
       populateFilters();
       if (session) favIds = await loadFavIds();
       await loadDocs();
@@ -80,7 +82,7 @@
         optionList(subjects, null, (s) => s[`name_${getLang()}`] || s.name_fr);
       levelSel.addEventListener("change", () => { updateSectionFilter(); updateSubjectFilter(); render(); });
       subjectSel.addEventListener("change", render);
-      sectionSel.addEventListener("change", render);
+      sectionSel.addEventListener("change", () => { updateSubjectFilter(); render(); });
       document.getElementById("searchInput").addEventListener("input", render);
       document.getElementById("clearFilters").addEventListener("click", () => {
         levelSel.value = "";
@@ -95,13 +97,20 @@
       updateSubjectFilter();
     }
 
-    // Restrict the subject filter to the subjects offered by the chosen level.
+    // Restrict the subject filter to the subjects offered by the chosen level
+    // and section (a section's list takes precedence over the level's).
     function updateSubjectFilter() {
       const lv = document.getElementById("levelFilter").value;
+      const sec = document.getElementById("sectionFilter").value;
       const subjectSel = document.getElementById("subjectFilter");
       subjectSel.value = "";
-      const ids = lv ? (subjectsByLevel[lv] || []) : [];
-      const list = (!lv || !ids.length) ? subjects : subjects.filter((s) => ids.includes(s.id));
+      let ids = [];
+      if (sec && (subjectsBySection[sec] || []).length) {
+        ids = subjectsBySection[sec];
+      } else if (lv && (subjectsByLevel[lv] || []).length) {
+        ids = subjectsByLevel[lv];
+      }
+      const list = ids.length ? subjects.filter((s) => ids.includes(s.id)) : subjects;
       subjectSel.innerHTML = `<option value="">${t("browse.all_subjects")}</option>` +
         optionList(list, null, (s) => s[`name_${getLang()}`] || s.name_fr);
     }

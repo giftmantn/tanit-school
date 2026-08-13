@@ -171,16 +171,29 @@ where (
 )
 on conflict do nothing;
 
--- A document's subject must be offered by the chosen level — but only when
--- the level actually restricts subjects (has rows in level_subjects).
+-- A document's subject must be offered by its section (when the section
+-- restricts subjects) and by its level (when no section restriction applies).
 -- Same trigger pattern as sections.
 create or replace function public.check_document_subject()
 returns trigger
 language plpgsql security definer set search_path = public
 as $$
 begin
-  if new.subject_id is not null and new.level_id is not null
-     and exists (select 1 from public.level_subjects ls where ls.level_id = new.level_id)
+  if new.subject_id is null or new.level_id is null then
+    return new;
+  end if;
+  if new.section_id is not null
+     and exists (select 1 from public.section_subjects ss where ss.section_id = new.section_id)
+  then
+    if not exists (
+      select 1 from public.section_subjects ss
+      where ss.section_id = new.section_id and ss.subject_id = new.subject_id
+    ) then
+      raise exception 'Subject is not available for this section';
+    end if;
+    return new;
+  end if;
+  if exists (select 1 from public.level_subjects ls where ls.level_id = new.level_id)
      and not exists (
        select 1 from public.level_subjects ls
        where ls.level_id = new.level_id and ls.subject_id = new.subject_id
@@ -196,6 +209,29 @@ drop trigger if exists document_subject_check on public.documents;
 create trigger document_subject_check
   before insert or update on public.documents
   for each row execute procedure public.check_document_subject();
+
+-- ---------- SECTION_SUBJECTS (which subjects each section offers) ----------
+create table if not exists public.section_subjects (
+  section_id uuid references public.sections(id) on delete cascade,
+  subject_id uuid references public.subjects(id) on delete cascade,
+  primary key (section_id, subject_id)
+);
+
+-- Reasonable default mapping (tune it afterwards from the admin panel).
+-- Subject ords: 1 Math, 2 Français, 3 Arabe, 4 Anglais, 5 Physique, 6 Chimie,
+-- 7 SVT, 8 Histoire-Géo, 9 Éduc. islamique, 10 Philosophie, 11 Informatique, 12 Autre.
+insert into public.section_subjects (section_id, subject_id)
+select sec.id, s.id
+from public.sections sec
+cross join public.subjects s
+where (
+  (sec.ord = 1 and s.ord between 1 and 12) or
+  (sec.ord = 2 and s.ord in (1,2,3,4,5,6,8,9,10,11,12)) or
+  (sec.ord = 3 and s.ord in (1,2,3,4,8,9,10,11,12)) or
+  (sec.ord = 4 and s.ord in (2,3,4,8,9,10,12)) or
+  (sec.ord in (5,6) and s.ord in (1,2,3,4,5,8,9,10,11,12))
+)
+on conflict do nothing;
 
 -- Enforce that a document's section (if any) is actually offered by the chosen level.
 -- RLS policies cannot reference NEW inside subqueries, so this lives in a trigger.
@@ -257,6 +293,7 @@ alter table public.subjects  enable row level security;
 alter table public.sections  enable row level security;
 alter table public.level_sections enable row level security;
 alter table public.level_subjects enable row level security;
+alter table public.section_subjects enable row level security;
 alter table public.documents enable row level security;
 alter table public.favorites enable row level security;
 
@@ -342,6 +379,18 @@ create policy "level_subjects_insert_admin" on public.level_subjects for insert 
 );
 drop policy if exists "level_subjects_delete_admin" on public.level_subjects;
 create policy "level_subjects_delete_admin" on public.level_subjects for delete using (
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+);
+
+-- --- SECTION_SUBJECTS (junction) ---
+drop policy if exists "section_subjects_select" on public.section_subjects;
+create policy "section_subjects_select" on public.section_subjects for select using (true);
+drop policy if exists "section_subjects_insert_admin" on public.section_subjects;
+create policy "section_subjects_insert_admin" on public.section_subjects for insert with check (
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+);
+drop policy if exists "section_subjects_delete_admin" on public.section_subjects;
+create policy "section_subjects_delete_admin" on public.section_subjects for delete using (
   exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 

@@ -209,7 +209,8 @@
     let sections = [];
     let sectionsByLevel = {};
     let subjectsByLevel = {};
-    let editingLevelId = null;
+    let subjectsBySection = {};
+    let editingTarget = null;
 
     document.addEventListener("DOMContentLoaded", async () => {
       initSupabase();
@@ -298,13 +299,17 @@
       });
     });
 
-    function openLevelSubjects(levelId) {
-      editingLevelId = levelId;
-      const level = levels.find((l) => l.id === levelId);
-      if (!level) return;
-      document.getElementById("levelSubjectsTitle").textContent =
-        t("admin.level.subjects_title") + " — " + (level[`name_${getLang()}`] || level.name_fr);
-      const assigned = subjectsByLevel[levelId] || [];
+    // editingTarget = { kind: "level" | "section", id }
+    function openLevelSubjects(kind, id) {
+      editingTarget = { kind, id };
+      const label = kind === "section"
+        ? (sections.find((x) => x.id === id) || {})[`name_${getLang()}`]
+        : (levels.find((x) => x.id === id) || {})[`name_${getLang()}`];
+      const titleKey = kind === "section" ? "admin.section.subjects_title" : "admin.level.subjects_title";
+      document.getElementById("levelSubjectsTitle").textContent = t(titleKey) + " — " + escapeHtml(label);
+      const assigned = kind === "section"
+        ? (subjectsBySection[id] || [])
+        : (subjectsByLevel[id] || []);
       document.getElementById("levelSubjectsBox").innerHTML = subjects.map((s) => `
         <label>
           <input type="checkbox" value="${s.id}" ${assigned.includes(s.id) ? "checked" : ""} />
@@ -315,39 +320,49 @@
 
     function closeLevelSubjects() {
       document.getElementById("levelSubjectsModal").classList.add("hidden");
-      editingLevelId = null;
+      editingTarget = null;
     }
 
     async function saveLevelSubjects() {
-      const levelId = editingLevelId;
-      if (!levelId) return;
+      const target = editingTarget;
+      if (!target) return;
       const checked = [...document.querySelectorAll("#levelSubjectsBox input:checked")].map((i) => i.value);
-      const existing = new Set(subjectsByLevel[levelId] || []);
+      const existing = new Set(target.kind === "section"
+        ? (subjectsBySection[target.id] || [])
+        : (subjectsByLevel[target.id] || []));
       const toAdd = checked.filter((id) => !existing.has(id));
       const toRemove = [...existing].filter((id) => !checked.includes(id));
+      const table = target.kind === "section" ? "section_subjects" : "level_subjects";
+      const fk = target.kind === "section" ? "section_id" : "level_id";
       if (toAdd.length) {
-        const { error } = await sb.from("level_subjects").insert(
-          toAdd.map((subject_id) => ({ level_id: levelId, subject_id }))
+        const { error } = await sb.from(table).insert(
+          toAdd.map((subject_id) => ({ [fk]: target.id, subject_id }))
         );
         if (error) { showAlert("alertBox", t("misc.error") + " (" + error.message + ")", "error"); return; }
       }
       if (toRemove.length) {
-        const { error } = await sb.from("level_subjects").delete().eq("level_id", levelId).in("subject_id", toRemove);
+        const { error } = await sb.from(table).delete().eq(fk, target.id).in("subject_id", toRemove);
         if (error) { showAlert("alertBox", t("misc.error") + " (" + error.message + ")", "error"); return; }
       }
-      subjectsByLevel = await fetchLevelSubjects();
-      renderLevels();
+      if (target.kind === "section") {
+        subjectsBySection = await fetchSectionSubjects();
+        renderSections();
+      } else {
+        subjectsByLevel = await fetchLevelSubjects();
+        renderLevels();
+      }
       closeLevelSubjects();
       showAlert("alertBox", t("admin.saved"), "success");
     }
 
     async function loadAll() {
-      const [l, s, sec, ls, lsub] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections(), fetchLevelSections(), fetchLevelSubjects()]);
+      const [l, s, sec, ls, lsub, ssub] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections(), fetchLevelSections(), fetchLevelSubjects(), fetchSectionSubjects()]);
       levels = l;
       subjects = s;
       sections = sec;
       sectionsByLevel = ls;
       subjectsByLevel = lsub;
+      subjectsBySection = ssub;
       await Promise.all([loadUsers(), loadDocs(), renderLevels(), renderSubjects(), renderSections(), renderSectionLevelChecks()]);
     }
 
@@ -461,7 +476,7 @@
               <button class="btn btn-sm btn-accent del-level" data-id="${l.id}">${t("admin.delete")}</button>
             </div>
           </td>`;
-        tr.querySelector(".edit-level-subjects").addEventListener("click", () => openLevelSubjects(l.id));
+        tr.querySelector(".edit-level-subjects").addEventListener("click", () => openLevelSubjects("level", l.id));
         tr.querySelector(".del-level").addEventListener("click", async () => {
           if (!confirm(t("misc.confirm_delete"))) return;
           await sb.from("levels").delete().eq("id", l.id);
@@ -506,7 +521,13 @@
           <td>${escapeHtml(sec.name_en)}</td>
           <td>${sec.ord}</td>
           <td>${assigned.length ? escapeHtml(assigned.map((l) => l[`name_${getLang()}`] || l.name_fr).join(", ")) : "-"}</td>
-          <td><button class="btn btn-sm btn-accent del-section" data-id="${sec.id}">${t("admin.delete")}</button></td>`;
+          <td>
+            <div class="actions">
+              <button class="btn btn-sm btn-ghost edit-section-subjects" data-id="${sec.id}">${t("admin.edit")}</button>
+              <button class="btn btn-sm btn-accent del-section" data-id="${sec.id}">${t("admin.delete")}</button>
+            </div>
+          </td>`;
+        tr.querySelector(".edit-section-subjects").addEventListener("click", () => openLevelSubjects("section", sec.id));
         tr.querySelector(".del-section").addEventListener("click", async () => {
           if (!confirm(t("misc.confirm_delete"))) return;
           await sb.from("sections").delete().eq("id", sec.id);
