@@ -30,31 +30,43 @@
           <h2 data-i18n="teacher.upload.title" style="margin-bottom:18px"></h2>
           <form id="docForm">
             <input type="hidden" id="docId" />
-            <div class="field">
-              <label data-i18n="teacher.doc.title_fr"></label>
-              <input type="text" id="titleFr" class="input" required />
-            </div>
-            <div class="field">
-              <label data-i18n="teacher.doc.title_ar"></label>
-              <input type="text" id="titleAr" class="input" required />
-            </div>
-            <div class="field">
-              <label data-i18n="teacher.doc.title_en"></label>
-              <input type="text" id="titleEn" class="input" required />
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-              <div class="field">
-                <label data-i18n="teacher.doc.desc_fr"></label>
-                <textarea id="descFr" class="input" required></textarea>
+            <div class="field-group">
+              <div class="field-group-head">
+                <label data-i18n="teacher.doc.titles"></label>
+                <button type="button" id="autoTitles" class="btn btn-sm btn-ghost" data-i18n="teacher.doc.auto_translate"></button>
               </div>
               <div class="field">
-                <label data-i18n="teacher.doc.desc_ar"></label>
-                <textarea id="descAr" class="input" required></textarea>
+                <label data-i18n="teacher.doc.title_fr"></label>
+                <input type="text" id="titleFr" class="input" required />
+              </div>
+              <div class="field">
+                <label data-i18n="teacher.doc.title_ar"></label>
+                <input type="text" id="titleAr" class="input" required />
+              </div>
+              <div class="field">
+                <label data-i18n="teacher.doc.title_en"></label>
+                <input type="text" id="titleEn" class="input" required />
               </div>
             </div>
-            <div class="field">
-              <label data-i18n="teacher.doc.desc_en"></label>
-              <textarea id="descEn" class="input" required></textarea>
+            <div class="field-group">
+              <div class="field-group-head">
+                <label data-i18n="teacher.doc.descriptions"></label>
+                <button type="button" id="autoDescs" class="btn btn-sm btn-ghost" data-i18n="teacher.doc.auto_translate"></button>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div class="field">
+                  <label data-i18n="teacher.doc.desc_fr"></label>
+                  <textarea id="descFr" class="input" required></textarea>
+                </div>
+                <div class="field">
+                  <label data-i18n="teacher.doc.desc_ar"></label>
+                  <textarea id="descAr" class="input" required></textarea>
+                </div>
+              </div>
+              <div class="field">
+                <label data-i18n="teacher.doc.desc_en"></label>
+                <textarea id="descEn" class="input" required></textarea>
+              </div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
               <div class="field">
@@ -193,29 +205,75 @@
 
     // Auto-translate the empty language fields as the teacher types in one language.
     // Only empty fields are filled, so manual text is never overwritten.
-    function wireAutoTranslate(sourceId, targets) {
-      document.getElementById(sourceId).addEventListener("input", () => {
-        clearTimeout(window.__transTimer);
-        window.__transTimer = setTimeout(async () => {
-          const text = document.getElementById(sourceId).value.trim();
-          if (!text) return;
-          for (const t of targets) {
-            const el = document.getElementById(t.id);
-            if (!el.value.trim()) {
-              const out = await translateText(text, t.lang);
-              if (out) el.value = out;
-            }
-          }
-        }, 700);
-      });
+    // Fires on input (debounced) and on blur (leaving the field).
+    function scheduleTranslate(sourceId, fromLang, targets) {
+      clearTimeout(window.__transTimer);
+      window.__transTimer = setTimeout(async () => {
+        const text = document.getElementById(sourceId).value.trim();
+        if (!text) return;
+        for (const t of targets) {
+          const el = document.getElementById(t.id);
+          if (el.value.trim()) continue;
+          const out = await translateText(text, fromLang, t.lang);
+          if (out) el.value = out;
+        }
+      }, 700);
     }
 
-    wireAutoTranslate("titleFr", [{ id: "titleAr", lang: "ar" }, { id: "titleEn", lang: "en" }]);
-    wireAutoTranslate("titleAr", [{ id: "titleFr", lang: "fr" }, { id: "titleEn", lang: "en" }]);
-    wireAutoTranslate("titleEn", [{ id: "titleFr", lang: "fr" }, { id: "titleAr", lang: "ar" }]);
-    wireAutoTranslate("descFr", [{ id: "descAr", lang: "ar" }, { id: "descEn", lang: "en" }]);
-    wireAutoTranslate("descAr", [{ id: "descFr", lang: "fr" }, { id: "descEn", lang: "en" }]);
-    wireAutoTranslate("descEn", [{ id: "descFr", lang: "fr" }, { id: "descAr", lang: "ar" }]);
+    function wireAutoTranslate(sourceId, fromLang, targets) {
+      const src = document.getElementById(sourceId);
+      src.addEventListener("input", () => scheduleTranslate(sourceId, fromLang, targets));
+      src.addEventListener("blur", () => scheduleTranslate(sourceId, fromLang, targets));
+    }
+
+    wireAutoTranslate("titleFr", "fr", [{ id: "titleAr", lang: "ar" }, { id: "titleEn", lang: "en" }]);
+    wireAutoTranslate("titleAr", "ar", [{ id: "titleFr", lang: "fr" }, { id: "titleEn", lang: "en" }]);
+    wireAutoTranslate("titleEn", "en", [{ id: "titleFr", lang: "fr" }, { id: "titleAr", lang: "ar" }]);
+    wireAutoTranslate("descFr", "fr", [{ id: "descAr", lang: "ar" }, { id: "descEn", lang: "en" }]);
+    wireAutoTranslate("descAr", "ar", [{ id: "descFr", lang: "fr" }, { id: "descEn", lang: "en" }]);
+    wireAutoTranslate("descEn", "en", [{ id: "descFr", lang: "fr" }, { id: "descAr", lang: "ar" }]);
+
+    // "Auto" buttons: fill every empty field of a group from the first filled one.
+    const TITLE_FIELDS = [
+      { id: "titleFr", lang: "fr" },
+      { id: "titleAr", lang: "ar" },
+      { id: "titleEn", lang: "en" },
+    ];
+    const DESC_FIELDS = [
+      { id: "descFr", lang: "fr" },
+      { id: "descAr", lang: "ar" },
+      { id: "descEn", lang: "en" },
+    ];
+
+    async function autoTranslateGroup(fields, btn) {
+      const source = fields.find((f) => document.getElementById(f.id).value.trim());
+      const empty = fields.filter((f) => !document.getElementById(f.id).value.trim());
+      if (!source) {
+        showAlert("alertBox", t("teacher.doc.auto_none"), "error");
+        return;
+      }
+      if (!empty.length) {
+        showAlert("alertBox", t("teacher.doc.auto_done"), "success");
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = "…";
+      const srcText = document.getElementById(source.id).value.trim();
+      for (const f of empty) {
+        const out = await translateText(srcText, source.lang, f.lang);
+        if (out) document.getElementById(f.id).value = out;
+      }
+      btn.disabled = false;
+      btn.textContent = t("teacher.doc.auto_translate");
+      showAlert("alertBox", t("teacher.doc.auto_done"), "success");
+    }
+
+    document.getElementById("autoTitles").addEventListener("click", function () {
+      autoTranslateGroup(TITLE_FIELDS, this);
+    });
+    document.getElementById("autoDescs").addEventListener("click", function () {
+      autoTranslateGroup(DESC_FIELDS, this);
+    });
 
     // Show the section select only when the chosen level has sections.
     function updateSectionSelect() {

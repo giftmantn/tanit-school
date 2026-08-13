@@ -296,22 +296,34 @@ function renderFooter() {
 }
 
 // ---------- Misc helpers ----------
-// Free client-side translation (Google's public translate endpoint).
+// Free client-side translation with a fallback chain:
+//  1. Google's public translate endpoint
+//  2. MyMemory (free, no key)
 // Returns null on failure so callers can silently skip.
-async function translateText(text, toLang) {
-  try {
-    const url =
-      "https://translate.googleapis.com/translate_a/single?client=gtx" +
-      "&sl=auto&tl=" + encodeURIComponent(toLang) +
-      "&dt=t&q=" + encodeURIComponent(text);
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!data || !Array.isArray(data[0])) return null;
-    return data[0].map((seg) => seg[0]).join("").trim() || null;
-  } catch (e) {
-    return null;
+async function translateText(text, fromLang, toLang) {
+  const providers = [
+    `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${fromLang}&tl=${toLang}&dt=t&q=${encodeURIComponent(text)}`,
+    `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${fromLang}|${toLang}`,
+  ];
+  for (const url of providers) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const data = await res.json();
+      let out = "";
+      if (Array.isArray(data[0])) {
+        out = data[0].map((seg) => seg[0]).join("");
+      } else if (data.responseData && data.responseData.translatedText) {
+        out = data.responseData.translatedText;
+      }
+      out = String(out).trim();
+      if (out && out !== text) return out;
+    } catch (e) {
+      console.warn("translateText provider failed:", url, e);
+    }
   }
+  console.warn("translateText: all providers failed for", text, fromLang, "->", toLang);
+  return null;
 }
 
 function escapeHtml(str) {

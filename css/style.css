@@ -230,6 +230,19 @@ main { flex: 1; padding: 24px 0 48px; }
 
 /* ---------- Forms ---------- */
 .field { margin-bottom: 16px; }
+.field-group { margin-bottom: 16px; }
+.field-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.field-group-head label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
 .field label {
   display: block;
   font-weight: 600;
