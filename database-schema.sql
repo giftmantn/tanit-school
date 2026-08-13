@@ -149,6 +149,28 @@ on conflict do nothing;
 -- Documents can optionally belong to a section (only meaningful for levels that have sections).
 alter table public.documents add column if not exists section_id uuid references public.sections(id) on delete set null;
 
+-- Enforce that a document's section (if any) is actually offered by the chosen level.
+-- RLS policies cannot reference NEW inside subqueries, so this lives in a trigger.
+create or replace function public.check_document_section()
+returns trigger
+language plpgsql security definer set search_path = public
+as $$
+begin
+  if new.section_id is not null and not exists (
+    select 1 from public.level_sections ls
+    where ls.level_id = new.level_id and ls.section_id = new.section_id
+  ) then
+    raise exception 'Section is not available for this level';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists document_section_check on public.documents;
+create trigger document_section_check
+  before insert or update on public.documents
+  for each row execute procedure public.check_document_section();
+
 -- ---------- DOCUMENTS ----------
 create table if not exists public.documents (
   id uuid primary key default gen_random_uuid(),
@@ -270,28 +292,20 @@ create policy "documents_select_own" on public.documents for select using (
   auth.uid() = uploader_id
   or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
--- Teachers and admins can insert. The section (if any) must match the level:
--- a section is only allowed if level_sections links it to the chosen level.
+-- Teachers and admins can insert.
 drop policy if exists "documents_insert_teacher" on public.documents;
 create policy "documents_insert_teacher" on public.documents for insert with check (
   exists (select 1 from public.profiles p
           where p.id = auth.uid() and p.role in ('teacher','admin'))
   and auth.uid() = uploader_id
-  and (new.section_id is null or exists (
-    select 1 from public.level_sections ls
-    where ls.level_id = new.level_id and ls.section_id = new.section_id
-  ))
 );
 -- Teachers can update their own, admins can update any.
+-- (Section/level consistency is enforced by the trigger below, not here,
+--  because RLS policies cannot reference NEW inside subqueries.)
 drop policy if exists "documents_update_owner" on public.documents;
 create policy "documents_update_owner" on public.documents for update using (
   auth.uid() = uploader_id
   or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
-) with check (
-  (new.section_id is null or exists (
-    select 1 from public.level_sections ls
-    where ls.level_id = new.level_id and ls.section_id = new.section_id
-  ))
 );
 drop policy if exists "documents_delete_owner" on public.documents;
 create policy "documents_delete_owner" on public.documents for delete using (
@@ -306,6 +320,53 @@ drop policy if exists "favorites_insert_own" on public.favorites;
 create policy "favorites_insert_own" on public.favorites for insert with check (auth.uid() = user_id);
 drop policy if exists "favorites_delete_own" on public.favorites;
 create policy "favorites_delete_own" on public.favorites for delete using (auth.uid() = user_id);
+
+-- ============================================================
+-- SELF-HEALING (safe to re-run at any time)
+-- -----------------------------
+-- Older installs re-ran the seed inserts before the unique
+-- constraints existed, producing duplicate levels/subjects.
+-- This block removes the duplicates, re-points any documents to
+-- the kept row, and adds the missing unique constraints so that
+-- `ON CONFLICT DO NOTHING` actually works from now on.
+-- ============================================================
+
+-- 1) Re-point documents that reference a duplicate level to the kept one.
+update public.documents d
+set level_id = k.id
+from public.levels dup
+join public.levels k on k.name_fr = dup.name_fr
+where d.level_id = dup.id
+  and k.id <> dup.id
+  and k.id = (select min(id) from public.levels where name_fr = dup.name_fr);
+
+-- 2) Drop duplicate levels (keep the lowest id per name).
+delete from public.levels dup
+using public.levels k
+where k.name_fr = dup.name_fr and dup.id > k.id;
+
+-- 3) Same for subjects.
+update public.documents d
+set subject_id = k.id
+from public.subjects dup
+join public.subjects k on k.name_fr = dup.name_fr
+where d.subject_id = dup.id
+  and k.id <> dup.id
+  and k.id = (select min(id) from public.subjects where name_fr = dup.name_fr);
+
+delete from public.subjects dup
+using public.subjects k
+where k.name_fr = dup.name_fr and dup.id > k.id;
+
+-- 4) Make the duplicates impossible in the future.
+--    (Unique indexes are used because PostgreSQL does not support
+--     ALTER TABLE ... ADD CONSTRAINT IF NOT EXISTS. A unique index on
+--     name_fr enforces the same rule and acts as the ON CONFLICT arbiter;
+--     on a fresh install it is skipped because the constraint from the
+--     CREATE TABLE statement already created an index with this name.)
+create unique index if not exists levels_name_fr_key   on public.levels   (name_fr);
+create unique index if not exists subjects_name_fr_key on public.subjects (name_fr);
+create unique index if not exists sections_name_fr_key on public.sections (name_fr);
 
 -- ============================================================
 -- STORAGE (if you ever want to upload files directly)
