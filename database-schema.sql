@@ -71,10 +71,22 @@ insert into public.levels (name_fr, name_ar, name_en, ord) values
 on conflict do nothing;
 
 -- Levels are grouped: primary/middle ("Base") vs secondary ("secondaire").
--- (Mirrors the group_level column already present in the live database.)
+-- The live database already has this column as the level_group enum, while a
+-- fresh install creates it as text — so we backfill the values with a dynamic
+-- cast that matches the actual column type.
 alter table public.levels add column if not exists group_level text;
-update public.levels set group_level = case when ord <= 9 then 'Base' else 'secondaire' end
-where group_level is null;
+do $$
+declare
+  col_udt text;
+begin
+  select udt_name into col_udt
+  from information_schema.columns
+  where table_schema = 'public' and table_name = 'levels' and column_name = 'group_level';
+  execute format(
+    'update public.levels set group_level = case when ord <= 9 then ''Base''::%I else ''secondaire''::%I end where group_level is null',
+    col_udt, col_udt
+  );
+end $$;
 
 -- ---------- SUBJECTS ----------
 create table if not exists public.subjects (
