@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Concept 4 — Espace enseignant « Studio » · Tanit School</title>
+<style>
+  :root {
+    --bg: #f3f6f8;
+    --panel: #ffffff;
+    --line: #e4eaee;
+    --ink: #15222b;
+    --muted: #5f7381;
+    --brand: #0e9f8a;
+    --brand-dark: #0b7f6f;
+    --brand-soft: #e0f5f0;
+    --amber: #f5b13d;
+    --rose: #e5484d;
+    --radius: 14px;
+    --shadow: 0 6px 22px -12px rgba(21, 34, 43, 0.2);
+    --font: "Segoe UI", "Tahoma", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--ink); line-height: 1.55; }
+  a { text-decoration: none; color: inherit; }
+  button { font-family: inherit; }
+
+  .layout { display: grid; grid-template-columns: 252px 1fr; min-height: 100vh; }
+
+  /* ---------- SIDEBAR ---------- */
+  .sidebar {
+    background: #101c26; color: #c7d3dc; padding: 22px 14px; display: flex; flex-direction: column; gap: 6px;
+    position: sticky; top: 0; height: 100vh;
+  }
+  .sidebar .brand { display: flex; align-items: center; gap: 10px; padding: 6px 10px 20px; color: #fff; font-weight: 800; font-size: 1.08rem; }
+  .sidebar .mark { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, var(--brand), #3fd6bd); display: grid; place-items: center; font-weight: 900; color: #04231d; }
+  .side-label { font-size: .7rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #5d7483; padding: 14px 12px 6px; }
+  .side-link { display: flex; align-items: center; gap: 11px; padding: 11px 12px; border-radius: 10px; font-weight: 600; font-size: .9rem; color: #b9c7d1; cursor: pointer; }
+  .side-link:hover { background: rgba(255,255,255,.05); color: #fff; }
+  .side-link.active { background: linear-gradient(90deg, rgba(14,159,138,.28), rgba(14,159,138,.06)); color: #4de0c6; }
+  .side-link .ico { font-size: 1.05rem; width: 22px; text-align: center; }
+  .side-link .badge { margin-left: auto; background: var(--rose); color: #fff; font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+  .side-foot { margin-top: auto; border-top: 1px solid rgba(255,255,255,.08); padding: 14px 8px 4px; }
+  .profile-pill { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--brand), #3fd6bd); display: grid; place-items: center; color: #04231d; font-weight: 800; font-size: .9rem; flex-shrink: 0; }
+  .profile-pill b { display: block; color: #fff; font-size: .86rem; line-height: 1.2; }
+  .profile-pill span { font-size: .74rem; color: #6f8594; }
+
+  /* ---------- MAIN ---------- */
+  .main { padding: 26px 34px 60px; max-width: 1200px; }
+  .topbar { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+  .topbar h1 { font-size: 1.5rem; letter-spacing: -.01em; }
+  .topbar .sub { color: var(--muted); font-size: .9rem; }
+  .topbar .actions { margin-left: auto; display: flex; gap: 10px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 11px; border: none; cursor: pointer; font-weight: 700; font-size: .9rem; }
+  .btn-brand { background: var(--brand); color: #fff; }
+  .btn-brand:hover { background: var(--brand-dark); }
+  .btn-outline { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+  .btn-outline:hover { border-color: var(--brand); color: var(--brand); }
+
+  /* ---------- STATS ---------- */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 26px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
+  .stat .top { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: .83rem; font-weight: 600; }
+  .stat .top .s-ico { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 1rem; }
+  .s-teal { background: var(--brand-soft); } .s-blue { background: #e4eefe; } .s-amber { background: #fdf0d7; } .s-rose { background: #fde7e7; }
+  .stat b { display: block; font-size: 1.7rem; margin-top: 10px; letter-spacing: -.01em; }
+  .stat .trend { font-size: .78rem; font-weight: 700; color: var(--brand); }
+
+  /* ---------- GRID: FORM + SIDE ---------- */
+  .grid-2 { display: grid; grid-template-columns: 1.7fr 1fr; gap: 20px; align-items: start; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); }
+  .card h2 { font-size: 1.05rem; margin-bottom: 18px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-weight: 600; font-size: .83rem; color: var(--muted); margin-bottom: 6px; }
+  .input, select, textarea { width: 100%; padding: 10px 13px; border: 1.5px solid var(--line); border-radius: 10px; font: inherit; font-size: .9rem; background: #fff; color: var(--ink); }
+  .input:focus, select:focus, textarea:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+  textarea { min-height: 76px; resize: vertical; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .drag-drop {
+    border: 2px dashed #cdd9df; border-radius: 12px; padding: 26px; text-align: center; color: var(--muted);
+    font-size: .87rem; cursor: pointer; transition: border-color .15s; background: #fbfdfd;
+  }
+  .drag-drop:hover { border-color: var(--brand); color: var(--brand); }
+  .drag-drop b { display: block; font-size: .95rem; margin-bottom: 3px; }
+
+  .side-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow); }
+  .side-card h2 { font-size: .95rem; margin-bottom: 14px; }
+  .status-item { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px dashed var(--line); font-size: .88rem; }
+  .status-item:last-child { border-bottom: none; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .dot.g { background: var(--brand); } .dot.a { background: var(--amber); } .dot.r { background: var(--rose); }
+  .status-item b { margin-right: auto; }
+  .status-item span { color: var(--muted); font-size: .8rem; }
+
+  /* ---------- TABLE ---------- */
+  .table-card { margin-top: 20px; }
+  .table-card h2 { margin-bottom: 0; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 640px; }
+  th, td { text-align: left; padding: 13px 14px; border-top: 1px solid var(--line); font-size: .87rem; }
+  th { color: var(--muted); font-weight: 700; font-size: .76rem; text-transform: uppercase; letter-spacing: .05em; }
+  tr:hover td { background: #f8fbfa; }
+  .row-title b { display: block; font-size: .9rem; }
+  .row-title span { color: var(--muted); font-size: .78rem; }
+  .status-pill { font-size: .74rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
+  .status-pill.ok { background: var(--brand-soft); color: var(--brand-dark); }
+  .status-pill.wait { background: #fdf0d7; color: #9a6a00; }
+  .row-act { display: flex; gap: 6px; }
+  .mini-btn { padding: 6px 11px; border-radius: 8px; border: 1px solid var(--line); background: #fff; font-size: .78rem; font-weight: 700; cursor: pointer; color: var(--ink); }
+  .mini-btn:hover { border-color: var(--brand); color: var(--brand); }
+  .mini-btn.danger:hover { border-color: var(--rose); color: var(--rose); }
+
+  @media (max-width: 980px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; flex-direction: row; align-items: center; overflow-x: auto; padding: 12px 16px; }
+    .sidebar .brand { padding: 0 16px 0 0; }
+    .side-label, .side-foot, .side-link .badge { display: none; }
+    .side-link { white-space: nowrap; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .main { padding: 20px 16px 50px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="#"><span class="mark">ت</span>Tanit School</a>
+    <div class="side-label">Espace</div>
+    <a class="side-link" href="#"><span class="ico">🏠</span>Tableau de bord</a>
+    <a class="side-link active" href="#"><span class="ico">📤</span>Publier un document</a>
+    <a class="side-link" href="#"><span class="ico">📚</span>Mes documents</a>
+    <a class="side-link" href="#"><span class="ico">⭐</span>Favoris reçus <span class="badge">12</span></a>
+    <div class="side-label">Général</div>
+    <a class="side-link" href="#"><span class="ico">🎨</span>Thème & langue</a>
+    <a class="side-link" href="#"><span class="ico">⚙️</span>Paramètres</a>
+    <div class="side-foot">
+      <div class="profile-pill">
+        <div class="avatar">LK</div>
+        <div><b>Leïla Khelifi</b><span>Enseignante · SVT</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h1>Bienvenue, Leïla 👋</h1>
+        <div class="sub">Voici ce qui se passe sur vos documents cette semaine.</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-outline">Aperçu du site</button>
+        <button class="btn btn-brand">＋ Nouveau document</button>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="top">Documents publiés <span class="s-ico s-teal">📄</span></div>
+        <b>24</b><span class="trend">▲ 3 cette semaine</span>
+      </div>
+      <div class="stat">
+        <div class="top">Consultations <span class="s-ico s-blue">👀</span></div>
+        <b>1 842</b><span class="trend">▲ 18 % vs. la semaine passée</span>
+      </div>
+      <div class="stat">
+        <div class="top">Favoris reçus <span class="s-ico s-amber">⭐</span></div>
+        <b>96</b><span class="trend">▲ 12 nouveaux</span>
+      </div>
+      <div class="stat">
+        <div class="top">En attente <span class="s-ico s-rose">🕓</span></div>
+        <b>2</b><span class="trend">Approbation admin</span>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h2>Publier un nouveau document</h2>
+        <div class="drag-drop">📎 <b>Glissez votre fichier ici</b>ou cliquez pour choisir — PDF, lien Google Drive…</div>
+        <div style="margin:14px 0 4px;text-align:center;color:var(--muted);font-size:.8rem;font-weight:600">— ou collez un lien Google Drive —</div>
+        <div class="field" style="margin-top:8px">
+          <label>Lien Google Drive</label>
+          <input class="input" type="url" placeholder="https://drive.google.com/file/d/…" />
+        </div>
+        <div class="field"><label>Titre (français)</label><input class="input" placeholder="Ex : Les fractions — cours complet" /></div>
+        <div class="row2">
+          <div class="field"><label>Titre (arabe)</label><input class="input" placeholder="الكسور — درس كامل" /></div>
+          <div class="field"><label>Titre (anglais)</label><input class="input" placeholder="Fractions — full lesson" /></div>
+        </div>
+        <div class="field"><label>Description</label><textarea class="input" placeholder="Résumé du contenu, niveaux visés…"></textarea></div>
+        <div class="row2">
+          <div class="field"><label>Niveau</label><select class="input"><option>6ème année primaire</option><option>9ème année de base</option><option>1ère année secondaire</option><option>Baccalauréat</option></select></div>
+          <div class="field"><label>Matière</label><select class="input"><option>Mathématiques</option><option>SVT</option><option>Physique</option><option>Français</option></select></div>
+        </div>
+        <div class="field"><label>Type de document</label>
+          <select class="input"><option>Cours</option><option>Série d'exercices</option><option>Examen</option><option>Manuel officiel</option></select>
+        </div>
+        <button class="btn btn-brand" style="margin-top:6px">Publier le document</button>
+      </div>
+
+      <div>
+        <div class="side-card" style="margin-bottom:20px">
+          <h2>Activité récente</h2>
+          <div class="status-item"><span class="dot g"></span><b>« Fractions »</b><span>+14 vues</span></div>
+          <div class="status-item"><span class="dot g"></span><b>« SVT — Bac »</b><span>+9 favoris</span></div>
+          <div class="status-item"><span class="dot a"></span><b>« Orthographe »</b><span>en cours</span></div>
+          <div class="status-item"><span class="dot r"></span><b>« Géographie »</b><span>en attente</span></div>
+        </div>
+        <div class="side-card">
+          <h2>💡 Astuce du jour</h2>
+          <p style="font-size:.86rem;color:var(--muted)">Utilisez la traduction automatique : remplissez le titre en français, Tanit génère les versions arabe et anglaise pour toucher plus d'élèves.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card table-card">
+      <h2 style="margin-bottom:14px">Mes documents</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Titre</th><th>Niveau</th><th>Type</th><th>Statut</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="row-title"><b>Les fractions — cours complet</b><span>6ème · Mathématiques</span></td>
+              <td>6ème</td><td>Cours</td>
+              <td><span class="status-pill ok">Publié</span></td>
+              <td><div class="row-act"><button class="mini-btn">Modifier</button><button class="mini-btn danger">Suppr.</button></div></td>
+            </tr>
+            <tr>
+              <td class="row-title"><b>Séries SVT — génétique</b><span>Bac · Sciences</span></td>
+              <td>Bac</td><td>Séries</td>
+              <td><span class="status-pill ok">Publié</span></td>
+              <td><div class="row-act"><button class="mini-btn">Modifier</button><button class="mini-btn danger">Suppr.</button></div></td>
+            </tr>
+            <tr>
+              <td class="row-title"><b>Dictées — 3ème année</b><span>3ème · Arabe</span></td>
+              <td>3ème</td><td>Exercices</td>
+              <td><span class="status-pill wait">En attente</span></td>
+              <td><div class="row-act"><button class="mini-btn">Modifier</button><button class="mini-btn danger">Suppr.</button></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

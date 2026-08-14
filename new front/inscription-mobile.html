@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Inscription · Mobile — Tanit School</title>
+<style>
+  :root {
+    --bg: #f5f7ff;
+    --card: #ffffff;
+    --ink: #131c33;
+    --muted: #6b7a99;
+    --brand: #5b67f7;
+    --brand-dark: #4854e0;
+    --brand-soft: #ecefff;
+    --mint: #22c08a;
+    --rose: #f45b7a;
+    --line: #e8ebf6;
+    --radius: 16px;
+    --font: "Segoe UI", "Tahoma", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body { font-family: var(--font); background: var(--bg); color: var(--ink); line-height: 1.55; overscroll-behavior: none; }
+
+  .app { max-width: 480px; margin: 0 auto; height: 100dvh; display: flex; flex-direction: column; background: var(--bg); position: relative; overflow: hidden; }
+
+  /* ---------- HEADER ---------- */
+  .top { padding: 20px 20px 0; }
+  .topbar { display: flex; align-items: center; gap: 12px; }
+  .logo { display: flex; align-items: center; gap: 9px; font-weight: 900; font-size: 1.05rem; }
+  .logo-badge { width: 34px; height: 34px; border-radius: 11px; background: linear-gradient(135deg, var(--brand), var(--mint)); display: grid; place-items: center; color: #fff; font-weight: 900; }
+  .steps-count { margin-left: auto; font-size: .8rem; font-weight: 700; color: var(--muted); }
+  .progress-track { height: 7px; background: #e4e8f6; border-radius: 999px; margin-top: 16px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0%; border-radius: 999px; background: linear-gradient(90deg, var(--brand), var(--mint)); transition: width .35s ease; }
+
+  /* ---------- STAGE ---------- */
+  .stage { flex: 1; overflow-y: auto; padding: 28px 20px 12px; scrollbar-width: none; }
+  .stage::-webkit-scrollbar { display: none; }
+  .step { display: none; }
+  .step.active { display: block; animation: slideIn .3s ease; }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: translateX(0); } }
+  .step.slide-left { animation: slideOut .22s ease forwards; }
+  @keyframes slideOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(-26px); } }
+
+  .q-label { font-size: .82rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--brand); margin-bottom: 8px; }
+  .q-title { font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.25; margin-bottom: 8px; }
+  .q-hint { color: var(--muted); font-size: .92rem; margin-bottom: 22px; }
+
+  /* ---------- INPUTS ---------- */
+  .input-wrap { position: relative; margin-bottom: 14px; }
+  .input {
+    width: 100%; padding: 16px; border: 1.5px solid var(--line); border-radius: var(--radius); font: inherit;
+    font-size: 1rem; background: var(--card); color: var(--ink); outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  .input:focus { border-color: var(--brand); box-shadow: 0 0 0 4px var(--brand-soft); }
+  .input::placeholder { color: #a7b1cc; }
+  .error-msg { color: var(--rose); font-size: .82rem; font-weight: 600; margin: -6px 4px 12px; display: none; }
+  .error-msg.show { display: block; }
+
+  .strength { height: 5px; border-radius: 999px; background: #e4e8f6; margin: 6px 2px 4px; overflow: hidden; }
+  .strength-fill { height: 100%; width: 0%; border-radius: 999px; transition: width .25s, background .25s; }
+  .strength-label { font-size: .76rem; font-weight: 700; color: var(--muted); }
+
+  /* ---------- OPTION CARDS ---------- */
+  .opt-grid { display: grid; gap: 12px; }
+  .opt {
+    display: flex; align-items: center; gap: 14px; padding: 16px; background: var(--card); border: 2px solid var(--line);
+    border-radius: var(--radius); cursor: pointer; transition: all .15s; font-weight: 700; font-size: .98rem;
+  }
+  .opt:active { transform: scale(.98); }
+  .opt .radio {
+    width: 22px; height: 22px; border-radius: 50%; border: 2px solid #c9d0e6; flex-shrink: 0; display: grid; place-items: center;
+    transition: all .15s;
+  }
+  .opt .radio::after { content: "✓"; color: #fff; font-size: .72rem; font-weight: 900; opacity: 0; }
+  .opt.selected { border-color: var(--brand); background: var(--brand-soft); }
+  .opt.selected .radio { border-color: var(--brand); background: var(--brand); }
+  .opt.selected .radio::after { opacity: 1; }
+
+  /* role cards */
+  .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .role {
+    padding: 26px 14px; text-align: center; background: var(--card); border: 2px solid var(--line); border-radius: var(--radius);
+    cursor: pointer; transition: all .15s;
+  }
+  .role:active { transform: scale(.97); }
+  .role .emoji { font-size: 2.4rem; }
+  .role b { display: block; margin-top: 10px; font-size: 1.02rem; }
+  .role span { font-size: .78rem; color: var(--muted); font-weight: 600; }
+  .role.selected { border-color: var(--brand); background: var(--brand-soft); box-shadow: 0 10px 22px -12px rgba(91,103,247,.5); }
+  .role.stu.selected { border-color: var(--brand); } .role.tea.selected { border-color: var(--mint); }
+
+  /* chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+  .chip {
+    padding: 13px 18px; border-radius: 999px; background: var(--card); border: 2px solid var(--line);
+    font-weight: 700; font-size: .92rem; cursor: pointer; transition: all .15s; color: var(--ink);
+  }
+  .chip:active { transform: scale(.96); }
+  .chip.selected { border-color: var(--mint); background: #e6faf1; color: #0f7a55; }
+
+  /* slider */
+  .slider-val { font-size: 2.2rem; font-weight: 900; color: var(--brand); text-align: center; margin: 6px 0 14px; }
+  input[type="range"] { width: 100%; -webkit-appearance: none; appearance: none; height: 8px; border-radius: 999px; background: linear-gradient(90deg, var(--brand) var(--fill,0%), #e4e8f6 var(--fill,0%)); outline: none; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 3px solid var(--brand); box-shadow: 0 4px 12px rgba(91,103,247,.4); cursor: grab; }
+
+  /* summary */
+  .summary-card { background: var(--card); border-radius: var(--radius); border: 1px solid var(--line); overflow: hidden; margin-bottom: 8px; }
+  .summary-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); font-weight: 800; }
+  .summary-head .av { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 1.05rem; }
+  .summary-row { display: flex; justify-content: space-between; gap: 14px; padding: 12px 16px; border-bottom: 1px dashed var(--line); font-size: .9rem; }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-row span { color: var(--muted); font-weight: 600; }
+  .summary-row b { text-align: right; }
+
+  /* ---------- BOTTOM BAR ---------- */
+  .bottom { padding: 12px 20px calc(18px + env(safe-area-inset-bottom)); background: var(--bg); }
+  .nav-row { display: flex; gap: 10px; }
+  .nav-btn {
+    flex: 1; padding: 16px; border: none; border-radius: 14px; font: inherit; font-weight: 800; font-size: 1rem;
+    cursor: pointer; transition: transform .1s, opacity .15s;
+  }
+  .nav-btn:active { transform: scale(.98); }
+  .nav-btn.primary { background: linear-gradient(135deg, var(--brand), var(--brand-dark)); color: #fff; box-shadow: 0 12px 24px -10px rgba(91,103,247,.6); }
+  .nav-btn.ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--line); flex: 0 0 96px; }
+  .nav-btn[disabled] { opacity: .45; }
+
+  /* ---------- SUCCESS ---------- */
+  .success { position: absolute; inset: 0; background: var(--bg); display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 30px; z-index: 10; }
+  .success.show { display: flex; animation: slideIn .4s ease; }
+  .check { width: 92px; height: 92px; border-radius: 50%; background: linear-gradient(135deg, var(--mint), #17a574); display: grid; place-items: center; color: #fff; font-size: 2.6rem; margin-bottom: 22px; box-shadow: 0 18px 40px -14px rgba(34,192,138,.6); animation: pop .5s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+  .success h2 { font-size: 1.5rem; margin-bottom: 8px; }
+  .success p { color: var(--muted); max-width: 300px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="top">
+    <div class="topbar">
+      <a class="logo" href="../index.html"><span class="logo-badge">ت</span>Tanit School</a>
+      <span class="steps-count" id="stepsCount">Question 1 / 9</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <main class="stage" id="stage"></main>
+
+  <div class="bottom">
+    <div class="nav-row">
+      <button class="nav-btn ghost" id="btnPrev" onclick="go(-1)">← Retour</button>
+      <button class="nav-btn primary" id="btnNext" onclick="go(1)">Continuer →</button>
+    </div>
+  </div>
+
+  <div class="success" id="success">
+    <div class="check">✓</div>
+    <h2>Compte créé !</h2>
+    <p>Votre demande d'inscription a bien été envoyée. Un administrateur doit encore l'approuver avant que vous puissiez vous connecter.</p>
+  </div>
+</div>
+
+<script>
+  const data = {};
+
+  const LEVELS = {
+    "Primaire": ["1ère année", "2ème année", "3ème année", "4ème année", "5ème année", "6ème année primaire"],
+    "Collège": ["7ème année de base", "8ème année de base", "9ème année de base"],
+    "Lycée": ["1ère année secondaire", "2ème année secondaire", "3ème année secondaire (Bac)"]
+  };
+  const SECTIONS = ["Mathématiques", "Sciences expérimentales", "Lettres", "Technique", "Économie & gestion", "Informatique"];
+  const SUBJECTS = ["Mathématiques", "Physique-Chimie", "SVT", "Français", "Arabe", "Anglais", "Histoire-Géo", "Informatique", "Éducation physique"];
+  const TEACH_LEVELS = ["Primaire", "Collège", "Lycée"];
+
+  const DEFS = {
+    student: [
+      { id: "name", label: "Votre nom complet", hint: "Il sera affiché sur vos documents et favoris.", type: "text", ph: "Ex : Ahmed Ben Salah" },
+      { id: "email", label: "Votre adresse e-mail", hint: "Pour vous connecter et recevoir vos notifications.", type: "email", ph: "vous@exemple.tn" },
+      { id: "password", label: "Choisissez un mot de passe", hint: "Au moins 6 caractères.", type: "password" },
+      { id: "cycle", label: "Dans quel cycle étudiez-vous ?", hint: "Nous adapterons la bibliothèque à votre niveau.", type: "single", options: ["Primaire", "Collège", "Lycée"] },
+      { id: "level", label: "Quelle est votre classe ?", hint: "", type: "level" },
+      { id: "section", label: "Quelle section préparez-vous ?", hint: "Pour le lycée uniquement.", type: "single", options: SECTIONS, only: () => data.cycle === "Lycée" },
+      { id: "school", label: "Nom de votre établissement", hint: "Facultatif, mais ça aide vos enseignants.", type: "text", ph: "Ex : Lycée de la Marsa", optional: true },
+      { id: "goal", label: "Quel est votre principal objectif ?", hint: "Choisissez-en un :", type: "single", options: ["Réussir mes examens", "Comprendre les mathématiques", "Améliorer mon français", "Préparer le bac", "Trouver des séries d'exercices"] },
+      { id: "summary", label: "Récapitulatif", type: "summary" }
+    ],
+    teacher: [
+      { id: "name", label: "Votre nom complet", hint: "Il sera affiché sur vos documents publiés.", type: "text", ph: "Ex : Leïla Khelifi" },
+      { id: "email", label: "Votre adresse e-mail", hint: "Pour vous connecter et recevoir vos notifications.", type: "email", ph: "vous@exemple.tn" },
+      { id: "password", label: "Choisissez un mot de passe", hint: "Au moins 6 caractères.", type: "password" },
+      { id: "subjects", label: "Quelles matières enseignez-vous ?", hint: "Sélectionnez une ou plusieurs matières.", type: "chips", options: SUBJECTS, multiple: true },
+      { id: "teachLevels", label: "À quels niveaux enseignez-vous ?", hint: "Sélectionnez un ou plusieurs cycles.", type: "chips", options: TEACH_LEVELS, multiple: true },
+      { id: "school", label: "Votre établissement", hint: "Facultatif.", type: "text", ph: "Ex : Collège pilote de Tunis", optional: true },
+      { id: "experience", label: "Votre expérience", hint: "Nombre d'années d'enseignement :", type: "slider", min: 0, max: 40 },
+      { id: "phone", label: "Votre téléphone", hint: "Facultatif — pour les échanges avec l'administration.", type: "tel", ph: "Ex : 20 123 456", optional: true },
+      { id: "summary", label: "Récapitulatif", type: "summary" }
+    ]
+  };
+
+  let role = null;
+  let steps = [];
+  let idx = 0;
+  const stage = document.getElementById("stage");
+
+  /* ---------- STEP LIST ---------- */
+  function buildSteps() {
+    if (!role) { steps = []; return; }
+    const defs = DEFS[role];
+    steps = defs.filter((d) => !d.only || d.only());
+    idx = 0;
+  }
+
+  /* ---------- RENDER ---------- */
+  function render() {
+    if (!role) {
+      document.getElementById("progressFill").style.width = "0%";
+      document.getElementById("stepsCount").textContent = "Bienvenue";
+      const nxt = document.getElementById("btnNext");
+      nxt.textContent = "Continuer →";
+      nxt.disabled = true;
+      stage.innerHTML = '<div class="step active" id="curStep">' + roleBody() + "</div>";
+      return;
+    }
+    const d = steps[idx];
+    const total = steps.length;
+    const pct = Math.round(((idx + 1) / total) * 100);
+    document.getElementById("progressFill").style.width = pct + "%";
+    document.getElementById("stepsCount").textContent = (idx === total - 1 ? "Récapitulatif" : "Question " + (idx + 1) + " / " + total);
+    const next = document.getElementById("btnNext");
+    next.textContent = d.type === "summary" ? "✓ Créer mon compte" : "Continuer →";
+
+    stage.innerHTML = '<div class="step active" id="curStep">' + bodyOf(d) + "</div>";
+    mount(d);
+    validate();
+
+    if (d.type !== "summary") {
+      const el = stage.querySelector("input, select");
+      if (el) el.focus({ preventScroll: true });
+    }
+  }
+
+  function bodyOf(d) {
+    let inner = "";
+    switch (d.type) {
+      case "text": case "email": case "tel":
+        inner = `
+          <div class="q-label">${label(d)}</div>
+          <div class="q-title">${d.label}</div>
+          <div class="q-hint">${d.hint}</div>
+          <div class="input-wrap">
+            <input class="input" type="${d.type === "text" ? "text" : d.type}" id="inp" placeholder="${d.ph || ""}" value="${(data[d.id] || "").replace(/"/g, "&quot;")}" autocomplete="off" />
+          </div>
+          <div class="error-msg" id="err"></div>`;
+        break;
+
+      case "password":
+        inner = `
+          <div class="q-label">${label(d)}</div>
+          <div class="q-title">${d.label}</div>
+          <div class="q-hint">${d.hint}</div>
+          <div class="input-wrap">
+            <input class="input" type="password" id="inp" placeholder="••••••••" value="" />
+          </div>
+          <div class="strength"><div class="strength-fill" id="strFill"></div></div>
+          <div class="strength-label" id="strLabel">Sécurité : —</div>
+          <div class="error-msg" id="err"></div>`;
+        break;
+
+      case "single":
+        inner = `
+          <div class="q-label">${label(d)}</div>
+          <div class="q-title">${d.label}</div>
+          <div class="q-hint">${d.hint}</div>
+          <div class="opt-grid">${d.options.map((o, i) => `
+            <div class="opt ${data[d.id] === o ? "selected" : ""}" onclick="pickOne('${d.id}', '${o.replace(/'/g, "\\'")}', this)">
+              <span class="radio"></span><span>${o}</span>
+            </div>`).join("")}</div>
+          <div class="error-msg" id="err"></div>`;
+        break;
+
+      case "level":
+        const list = LEVELS[data.cycle] || [];
+        inner = `
+          <div class="q-label">${label(d)}</div>
+          <div class="q-title">${d.label}</div>
+          <div class="q-hint">Vous avez choisi le cycle : <b>${data.cycle}</b></div>
+          <div class="opt-grid">${list.map((o) => `
+            <div class="opt ${data.level === o ? "selected" : ""}" onclick="pickOne('level', '${o.replace(/'/g, "\\'")}', this)">
+              <span class="radio"></span><span>${o}</span>
+            </div>`).join("")}</div>
+          <div class="error-msg" id="err"></div>`;
+        break;
+
+      case "chips":
+        inner = `
+          <div class="q-label">${label(d)}</div>
+          <div class="q-title">${d.label}</div>
+          <div class="q-hint">${d.hint}</div>
+          <div class="chips">${d.options.map((o) => {
+            const arr = data[d.id] || [];
+            return `<div class="chip ${arr.includes(o) ? "selected" : ""}" onclick="toggleChip('${d.id}', '${o.replace(/'/g, "\\'")}', this)">${o}</div>`;
+          }).join("")}</div>
+          <div class="error-msg" id="err"></div>`;
+        break;
+
+      case "slider":
+        const v = data[d.id] != null ? data[d.id] : 3;
+        inner = `
+          <div class="q-label">${label(d)}</div>
+          <div class="q-title">${d.label}</div>
+          <div class="q-hint">${d.hint}</div>
+          <div class="slider-val" id="sliderVal">${v} an${v > 1 ? "s" : ""}</div>
+          <input type="range" id="range" min="${d.min}" max="${d.max}" value="${v}" style="--fill:${((v - d.min) / (d.max - d.min)) * 100}%" />`;
+        break;
+
+      case "summary":
+        inner = summaryHTML();
+        break;
+    }
+    return inner;
+  }
+
+  function label(d) {
+    return role === "student" ? "Profil élève" : role === "teacher" ? "Profil enseignant" : "Bienvenue";
+  }
+
+  function roleBody() {
+    return `
+      <div class="q-label">Bienvenue</div>
+      <div class="q-title">Qui êtes-vous ?</div>
+      <div class="q-hint">Les questions suivantes s'adapteront à votre profil.</div>
+      <div class="role-grid">
+        <div class="role stu ${data.role === "student" ? "selected" : ""}" onclick="pickRole('student')">
+          <div class="emoji">🎓</div><b>Élève</b><span>Primaire · Collège · Lycée</span>
+        </div>
+        <div class="role tea ${data.role === "teacher" ? "selected" : ""}" onclick="pickRole('teacher')">
+          <div class="emoji">🧑‍🏫</div><b>Enseignant</b><span>Publier des documents</span>
+        </div>
+      </div>`;
+  }
+
+  function summaryHTML() {
+    const items = steps.filter((s) => s.type !== "summary").map((s) => {
+      let v = data[s.id];
+      if (Array.isArray(v)) v = v.join(", ");
+      if (v == null || v === "") v = "—";
+      return `<div class="summary-row"><span>${s.label}</span><b>${v}</b></div>`;
+    }).join("");
+    const av = role === "student" ? "🎓" : "🧑‍🏫";
+    const lbl = role === "student" ? "Élève" : "Enseignant";
+    return `
+      <div class="q-label">Dernière étape</div>
+      <div class="q-title">Votre profil est prêt ✨</div>
+      <div class="q-hint">Vérifiez vos informations avant de créer votre compte.</div>
+      <div class="summary-card">
+        <div class="summary-head"><span class="av">${av}</span>Compte ${lbl} <span style="margin-left:auto;font-size:.8rem;color:var(--muted)">${data.email || ""}</span></div>
+        ${items}
+      </div>`;
+  }
+
+  /* ---------- MOUNT ---------- */
+  function mount(d) {
+    const el = document.getElementById("curStep");
+    if (!el) return;
+    const err = el.querySelector("#err");
+
+    if (d.type === "text" || d.type === "email" || d.type === "tel") {
+      const inp = el.querySelector("#inp");
+      inp.addEventListener("input", () => { data[d.id] = inp.value.trim(); validate(); });
+    }
+    if (d.type === "password") {
+      const inp = el.querySelector("#inp");
+      const fill = el.querySelector("#strFill");
+      const lbl = el.querySelector("#strLabel");
+      inp.addEventListener("input", () => {
+        data[d.id] = inp.value;
+        const n = inp.value.length;
+        let c = 0, w = "0%", t = "Sécurité : faible";
+        if (n >= 6) { c = "#eab308"; w = "40%"; t = "Sécurité : moyenne"; }
+        if (n >= 10) { c = "#22c08a"; w = "75%"; t = "Sécurité : bonne"; }
+        if (n >= 14) { c = "#159a63"; w = "100%"; t = "Sécurité : excellente"; }
+        fill.style.width = w; fill.style.background = c; lbl.textContent = t;
+        validate();
+      });
+    }
+    if (d.type === "slider") {
+      const r = el.querySelector("#range");
+      const out = el.querySelector("#sliderVal");
+      r.addEventListener("input", () => {
+        const v = +r.value;
+        data[d.id] = v;
+        out.textContent = v + " an" + (v > 1 ? "s" : "");
+        r.style.setProperty("--fill", ((v - d.min) / (d.max - d.min)) * 100 + "%");
+      });
+    }
+  }
+
+  /* ---------- INTERACTIONS ---------- */
+  function pickRole(r) {
+    role = r;
+    data.role = r;
+    data.cycle = undefined; data.level = undefined; data.section = undefined;
+    document.querySelectorAll(".role").forEach((x) => x.classList.remove("selected"));
+    event.target.closest(".role").classList.add("selected");
+    buildSteps();
+    render();
+  }
+  window.pickRole = pickRole;
+
+  function pickOne(id, value, el) {
+    data[id] = value;
+    document.querySelectorAll("#curStep .opt").forEach((x) => x.classList.remove("selected"));
+    el.classList.add("selected");
+    validate();
+  }
+  window.pickOne = pickOne;
+
+  function toggleChip(id, value, el) {
+    if (!data[id]) data[id] = [];
+    const arr = data[id];
+    const i = arr.indexOf(value);
+    if (i >= 0) { arr.splice(i, 1); el.classList.remove("selected"); }
+    else { arr.push(value); el.classList.add("selected"); }
+    validate();
+  }
+  window.toggleChip = toggleChip;
+
+  function validate() {
+    const d = steps[idx];
+    if (!d) return;
+    const err = document.getElementById("err");
+    const next = document.getElementById("btnNext");
+    if (d.type === "summary" || d.type === "role") { next.disabled = false; return; }
+    let ok = true;
+    if (d.type === "text" || d.type === "email" || d.type === "tel") ok = !!data[d.id];
+    if (d.type === "password") ok = (data[d.id] || "").length >= 6;
+    if (d.type === "single" || d.type === "level") ok = !!data[d.id];
+    if (d.type === "chips") ok = (data[d.id] || []).length > 0;
+    if (d.optional) ok = true;
+    next.disabled = !ok;
+    if (err) err.classList.toggle("show", !ok);
+  }
+
+  /* ---------- NAVIGATION ---------- */
+  function go(dir) {
+    if (dir === 1 && document.getElementById("btnNext").disabled) return;
+    const d = steps[idx];
+
+    if (dir === 1 && d.type === "summary") {
+      finish();
+      return;
+    }
+    if (dir === -1 && idx === 0) {
+      if (role) { role = null; data.role = undefined; steps = []; idx = 0; render(); }
+      return;
+    }
+    if (idx + dir >= 0 && idx + dir < steps.length) {
+      idx += dir;
+      render();
+    }
+  }
+  window.go = go;
+
+  function finish() {
+    console.log("Inscription soumise :", JSON.stringify(data, null, 2));
+    document.querySelector(".bottom").style.display = "none";
+    document.querySelector(".top").style.display = "none";
+    stage.style.display = "none";
+    document.getElementById("success").classList.add("show");
+  }
+
+  /* ---------- SWIPE ---------- */
+  let tx = null;
+  document.querySelector(".stage").addEventListener("touchstart", (e) => { tx = e.touches[0].clientX; }, { passive: true });
+  document.querySelector(".stage").addEventListener("touchend", (e) => {
+    if (tx == null) return;
+    const dx = e.changedTouches[0].clientX - tx;
+    if (dx < -50) go(1);
+    else if (dx > 50) go(-1);
+    tx = null;
+  }, { passive: true });
+
+  /* keyboard */
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") go(1);
+  });
+
+  buildSteps();
+  render();
+</script>
+</body>
+</html>

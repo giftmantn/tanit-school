@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Inscription · Desktop — Tanit School</title>
+<style>
+  :root {
+    --bg: #eef1fb;
+    --panel: #ffffff;
+    --ink: #141d3a;
+    --muted: #66749b;
+    --brand: #5b67f7;
+    --brand-dark: #4652e2;
+    --brand-soft: #ecefff;
+    --mint: #22c08a;
+    --rose: #f45b7a;
+    --line: #e6e9f5;
+    --radius: 18px;
+    --shadow: 0 24px 60px -30px rgba(20, 29, 58, .35);
+    --font: "Segoe UI", "Tahoma", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--ink); line-height: 1.6; min-height: 100vh; display: grid; place-items: center; padding: 30px 20px; }
+
+  .shell { display: grid; grid-template-columns: 360px 1fr; max-width: 1060px; width: 100%; background: var(--panel); border-radius: 24px; box-shadow: var(--shadow); overflow: hidden; border: 1px solid var(--line); }
+
+  /* ============ LEFT ============ */
+  .left { background: linear-gradient(180deg, #121a3c 0%, #1c2350 100%); color: #cfd6f5; padding: 34px 30px; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+  .left::before { content: ""; position: absolute; width: 300px; height: 300px; border-radius: 50%; background: radial-gradient(circle, rgba(91,103,247,.45), transparent 70%); top: -90px; right: -90px; }
+  .left::after { content: ""; position: absolute; width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(circle, rgba(34,192,138,.3), transparent 70%); bottom: -60px; left: -70px; }
+  .left > * { position: relative; z-index: 1; }
+
+  .logo { display: flex; align-items: center; gap: 11px; font-weight: 900; font-size: 1.15rem; color: #fff; text-decoration: none; }
+  .logo-badge { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, var(--brand), var(--mint)); display: grid; place-items: center; font-size: 1.05rem; box-shadow: 0 10px 24px -8px rgba(91,103,247,.8); }
+  .left h1 { color: #fff; font-size: 1.55rem; margin-top: 34px; letter-spacing: -.02em; line-height: 1.3; }
+  .left h1 span { background: linear-gradient(90deg, #8b93ff, #4de0b8); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  .progress-label { display: flex; justify-content: space-between; font-size: .82rem; font-weight: 700; color: #98a2dd; margin: 26px 0 8px; }
+  .progress-track { height: 8px; background: rgba(255,255,255,.12); border-radius: 999px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0%; border-radius: 999px; background: linear-gradient(90deg, var(--brand), var(--mint)); transition: width .35s ease; }
+
+  .steps { margin-top: 30px; display: flex; flex-direction: column; gap: 4px; }
+  .step-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; font-size: .9rem; color: #8f97cf; cursor: default; transition: all .15s; }
+  .step-item .num { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid #3a4278; display: grid; place-items: center; font-size: .76rem; font-weight: 800; flex-shrink: 0; background: rgba(255,255,255,.04); }
+  .step-item .dot { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: .8rem; flex-shrink: 0; color: #fff; }
+  .step-item.current { background: rgba(91,103,247,.22); color: #fff; font-weight: 700; }
+  .step-item.current .num { border-color: #8b93ff; background: var(--brand); color: #fff; }
+  .step-item.done .num { border-color: transparent; background: var(--mint); color: #fff; }
+  .step-item.done { color: #a9b0dd; }
+
+  .left-foot { margin-top: auto; font-size: .78rem; color: #727ab0; border-top: 1px solid rgba(255,255,255,.1); padding-top: 16px; }
+
+  /* ============ RIGHT ============ */
+  .right { padding: 44px 56px 34px; display: flex; flex-direction: column; min-width: 0; }
+  .right-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; }
+  .role-pill { display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); }
+  .role-pill button { border: none; background: transparent; padding: 8px 18px; border-radius: 999px; font: inherit; font-weight: 700; font-size: .86rem; color: var(--muted); cursor: pointer; transition: all .15s; }
+  .role-pill button.active { background: var(--brand); color: #fff; box-shadow: 0 8px 16px -8px rgba(91,103,247,.7); }
+  .role-pill button.active.tea { background: var(--mint); }
+  .secure-tag { display: inline-flex; align-items: center; gap: 7px; font-size: .8rem; font-weight: 700; color: var(--mint); background: #e9faf2; padding: 8px 14px; border-radius: 999px; }
+
+  .content { flex: 1; display: flex; flex-direction: column; justify-content: center; max-width: 560px; width: 100%; margin: 0 auto; }
+  .q-label { font-size: .8rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--brand); margin-bottom: 10px; }
+  .q-title { font-size: clamp(1.6rem, 3vw, 2.1rem); font-weight: 800; letter-spacing: -.02em; line-height: 1.2; margin-bottom: 10px; }
+  .q-hint { color: var(--muted); margin-bottom: 28px; }
+
+  .opt-grid { display: grid; gap: 12px; }
+  .opt { display: flex; align-items: center; gap: 14px; padding: 17px 20px; border: 2px solid var(--line); border-radius: 14px; cursor: pointer; transition: all .15s; font-weight: 600; background: #fff; }
+  .opt:hover { border-color: #c9cfff; }
+  .opt .radio { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #c9d0e6; display: grid; place-items: center; font-size: .74rem; color: transparent; font-weight: 900; flex-shrink: 0; transition: all .15s; }
+  .opt.selected { border-color: var(--brand); background: var(--brand-soft); }
+  .opt.selected .radio { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+  .role-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .role { padding: 34px 22px; border: 2px solid var(--line); border-radius: 18px; text-align: center; cursor: pointer; transition: all .15s; background: #fff; }
+  .role:hover { transform: translateY(-3px); border-color: #c9cfff; box-shadow: 0 16px 30px -20px rgba(20,29,58,.35); }
+  .role .emoji { font-size: 3rem; }
+  .role b { display: block; margin-top: 14px; font-size: 1.15rem; }
+  .role span { font-size: .85rem; color: var(--muted); }
+  .role.stu.selected { border-color: var(--brand); background: var(--brand-soft); }
+  .role.tea.selected { border-color: var(--mint); background: #e9faf2; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+  .chip { padding: 13px 20px; border-radius: 999px; border: 2px solid var(--line); background: #fff; font-weight: 700; font-size: .92rem; cursor: pointer; transition: all .12s; }
+  .chip:hover { border-color: #c9cfff; }
+  .chip.selected { border-color: var(--mint); background: #e9faf2; color: #0f7a55; }
+
+  .input { width: 100%; padding: 16px 18px; border: 1.5px solid var(--line); border-radius: 14px; font: inherit; font-size: 1rem; background: #fff; color: var(--ink); outline: none; transition: all .15s; }
+  .input:focus { border-color: var(--brand); box-shadow: 0 0 0 4px var(--brand-soft); }
+  .input::placeholder { color: #a9b2cc; }
+
+  .strength { height: 6px; border-radius: 999px; background: #e6e9f5; margin: 10px 0 6px; overflow: hidden; }
+  .strength-fill { height: 100%; width: 0%; transition: all .25s; }
+  .strength-label { font-size: .8rem; font-weight: 700; color: var(--muted); }
+
+  .slider-val { font-size: 3rem; font-weight: 900; color: var(--brand); text-align: center; margin: 8px 0 18px; }
+  input[type="range"] { width: 100%; -webkit-appearance: none; height: 10px; border-radius: 999px; background: linear-gradient(90deg, var(--brand) var(--fill,0%), #e6e9f5 var(--fill,0%)); outline: none; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; border-radius: 50%; background: #fff; border: 3px solid var(--brand); box-shadow: 0 6px 16px rgba(91,103,247,.4); cursor: grab; }
+
+  .error-msg { color: var(--rose); font-size: .84rem; font-weight: 600; margin-top: 10px; display: none; }
+  .error-msg.show { display: block; }
+
+  .summary-card { background: var(--bg); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .summary-head { display: flex; align-items: center; gap: 10px; padding: 16px 20px; font-weight: 800; border-bottom: 1px solid var(--line); }
+  .summary-head .av { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; font-size: 1.1rem; background: #fff; }
+  .summary-row { display: flex; justify-content: space-between; gap: 18px; padding: 13px 20px; border-bottom: 1px dashed var(--line); font-size: .92rem; }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-row span { color: var(--muted); font-weight: 600; }
+  .summary-row b { text-align: right; }
+
+  .nav-row { display: flex; gap: 12px; margin-top: 34px; }
+  .nav-btn { padding: 15px 30px; border: none; border-radius: 14px; font: inherit; font-weight: 800; font-size: .98rem; cursor: pointer; transition: all .12s; }
+  .nav-btn.primary { background: linear-gradient(135deg, var(--brand), var(--brand-dark)); color: #fff; box-shadow: 0 14px 28px -12px rgba(91,103,247,.7); }
+  .nav-btn.primary:hover { transform: translateY(-2px); }
+  .nav-btn.ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--line); margin-right: auto; }
+  .nav-btn.ghost:hover { border-color: #c9cfff; color: var(--ink); }
+  .nav-btn[disabled] { opacity: .45; pointer-events: none; }
+  .hint-key { align-self: center; font-size: .78rem; color: #a9b2cc; font-weight: 600; }
+
+  .success { display: none; text-align: center; padding: 40px 0; }
+  .success.show { display: block; animation: slideIn .4s ease; }
+  .check { width: 96px; height: 96px; margin: 0 auto 24px; border-radius: 50%; background: linear-gradient(135deg, var(--mint), #17a574); color: #fff; font-size: 2.8rem; display: grid; place-items: center; box-shadow: 0 20px 44px -14px rgba(34,192,138,.6); animation: pop .5s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+  .success h2 { font-size: 1.8rem; margin-bottom: 10px; }
+  .success p { color: var(--muted); max-width: 380px; margin: 0 auto; }
+
+  @media (max-width: 880px) {
+    .shell { grid-template-columns: 1fr; }
+    .left { display: none; }
+    .right { padding: 30px 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <aside class="left">
+    <a class="logo" href="../index.html"><span class="logo-badge">ت</span>Tanit School</a>
+    <h1>Créez votre compte<br />en quelques <span>questions</span></h1>
+
+    <div class="progress-label"><span id="progLabel">Progression</span><span id="progPct">0 %</span></div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+    <div class="steps" id="stepList"></div>
+
+    <div class="left-foot">🔒 Vos informations restent privées et ne sont jamais partagées.</div>
+  </aside>
+
+  <section class="right">
+    <div class="right-top">
+      <div class="role-pill">
+        <button id="pillStudent" class="active">🎓 Élève</button>
+        <button id="pillTeacher">🧑‍🏫 Enseignant</button>
+      </div>
+      <span class="secure-tag">🔒 Connexion sécurisée</span>
+    </div>
+
+    <div class="content" id="content"></div>
+
+    <div class="nav-row">
+      <button class="nav-btn ghost" id="btnPrev" onclick="go(-1)">← Précédent</button>
+      <button class="nav-btn primary" id="btnNext" onclick="go(1)">Continuer →</button>
+      <span class="hint-key">Appuyez sur Entrée pour continuer</span>
+    </div>
+  </section>
+</div>
+
+<script>
+  const data = {};
+
+  const LEVELS = {
+    "Primaire": ["1ère année", "2ème année", "3ème année", "4ème année", "5ème année", "6ème année primaire"],
+    "Collège": ["7ème année de base", "8ème année de base", "9ème année de base"],
+    "Lycée": ["1ère année secondaire", "2ème année secondaire", "3ème année secondaire (Bac)"]
+  };
+  const SECTIONS = ["Mathématiques", "Sciences expérimentales", "Lettres", "Technique", "Économie & gestion", "Informatique"];
+  const SUBJECTS = ["Mathématiques", "Physique-Chimie", "SVT", "Français", "Arabe", "Anglais", "Histoire-Géo", "Informatique", "Éducation physique"];
+  const TEACH_LEVELS = ["Primaire", "Collège", "Lycée"];
+
+  const DEFS = {
+    student: [
+      { id: "name", label: "Votre nom complet", hint: "Il sera affiché sur vos documents et favoris.", type: "text", ph: "Ex : Ahmed Ben Salah" },
+      { id: "email", label: "Votre adresse e-mail", hint: "Pour vous connecter et recevoir vos notifications.", type: "email", ph: "vous@exemple.tn" },
+      { id: "password", label: "Choisissez un mot de passe", hint: "Au moins 6 caractères.", type: "password" },
+      { id: "cycle", label: "Dans quel cycle étudiez-vous ?", hint: "Nous adapterons la bibliothèque à votre niveau.", type: "single", options: ["Primaire", "Collège", "Lycée"] },
+      { id: "level", label: "Quelle est votre classe ?", hint: "", type: "level" },
+      { id: "section", label: "Quelle section préparez-vous ?", hint: "Vous êtes en lycée.", type: "single", options: SECTIONS, only: () => data.cycle === "Lycée" },
+      { id: "school", label: "Nom de votre établissement", hint: "Facultatif, mais utile pour vos enseignants.", type: "text", ph: "Ex : Lycée de la Marsa", optional: true },
+      { id: "goal", label: "Quel est votre principal objectif ?", hint: "Choisissez-en un :", type: "single", options: ["Réussir mes examens", "Comprendre les mathématiques", "Améliorer mon français", "Préparer le bac", "Trouver des séries d'exercices"] },
+      { id: "summary", label: "Récapitulatif", type: "summary" }
+    ],
+    teacher: [
+      { id: "name", label: "Votre nom complet", hint: "Il sera affiché sur vos documents publiés.", type: "text", ph: "Ex : Leïla Khelifi" },
+      { id: "email", label: "Votre adresse e-mail", hint: "Pour vous connecter et recevoir vos notifications.", type: "email", ph: "vous@exemple.tn" },
+      { id: "password", label: "Choisissez un mot de passe", hint: "Au moins 6 caractères.", type: "password" },
+      { id: "subjects", label: "Quelles matières enseignez-vous ?", hint: "Sélectionnez une ou plusieurs matières.", type: "chips", options: SUBJECTS, multiple: true },
+      { id: "teachLevels", label: "À quels niveaux enseignez-vous ?", hint: "Sélectionnez un ou plusieurs cycles.", type: "chips", options: TEACH_LEVELS, multiple: true },
+      { id: "school", label: "Votre établissement", hint: "Facultatif.", type: "text", ph: "Ex : Collège pilote de Tunis", optional: true },
+      { id: "experience", label: "Votre expérience", hint: "Nombre d'années d'enseignement :", type: "slider", min: 0, max: 40 },
+      { id: "phone", label: "Votre téléphone", hint: "Facultatif — pour les échanges avec l'administration.", type: "tel", ph: "Ex : 20 123 456", optional: true },
+      { id: "summary", label: "Récapitulatif", type: "summary" }
+    ]
+  };
+
+  let role = "student";
+  data.role = role;
+  let steps = [];
+  let idx = 0;
+
+  const content = document.getElementById("content");
+  const stepList = document.getElementById("stepList");
+
+  function buildSteps() {
+    steps = DEFS[role].filter((d) => !d.only || d.only());
+    idx = 0;
+  }
+
+  function render() {
+    renderSidebar();
+    renderContent();
+    renderNav();
+  }
+
+  function renderSidebar() {
+    const d = steps[idx];
+    const total = steps.length;
+    const pct = Math.round(((idx + 1) / total) * 100);
+    document.getElementById("progressFill").style.width = pct + "%";
+    document.getElementById("progPct").textContent = pct + " %";
+    document.getElementById("progLabel").textContent = (d.type === "summary" ? "Récapitulatif" : "Question " + (idx + 1) + " sur " + total);
+
+    stepList.innerHTML = steps.map((s, i) => {
+      const isCur = i === idx;
+      const isDone = i < idx;
+      let icon = isCur ? `<span class="num">${i + 1}</span>` : isDone ? `<span class="dot">✓</span>` : `<span class="num">${i + 1}</span>`;
+      return `<div class="step-item ${isCur ? "current" : ""} ${isDone ? "done" : ""}">${icon}<span>${s.label}</span></div>`;
+    }).join("");
+  }
+
+  function renderNav() {
+    const d = steps[idx];
+    const next = document.getElementById("btnNext");
+    next.textContent = d.type === "summary" ? "✓ Créer mon compte" : "Continuer →";
+    next.classList.remove("primary");
+    next.classList.add("primary");
+    document.getElementById("btnPrev").disabled = idx === 0 && role === "student" ? true : false;
+  }
+
+  function renderContent() {
+    const d = steps[idx];
+    let html = "";
+    switch (d.type) {
+      case "role": html = roleHTML(); break;
+      case "text": case "email": case "tel":
+        html = `<div class="q-label">${roleLabel()}</div>
+          <div class="q-title">${d.label}</div><div class="q-hint">${d.hint}</div>
+          <input class="input" id="inp" type="${d.type === "text" ? "text" : d.type}" placeholder="${d.ph || ""}" value="${(data[d.id] || "").replace(/"/g, "&quot;")}" />
+          <div class="error-msg" id="err"></div>`;
+        break;
+      case "password":
+        html = `<div class="q-label">${roleLabel()}</div>
+          <div class="q-title">${d.label}</div><div class="q-hint">${d.hint}</div>
+          <input class="input" id="inp" type="password" placeholder="••••••••" />
+          <div class="strength"><div class="strength-fill" id="strFill"></div></div>
+          <div class="strength-label" id="strLabel">Sécurité : —</div>
+          <div class="error-msg" id="err"></div>`;
+        break;
+      case "single":
+        html = `<div class="q-label">${roleLabel()}</div>
+          <div class="q-title">${d.label}</div><div class="q-hint">${d.hint}</div>
+          <div class="opt-grid">${d.options.map((o) => `<div class="opt ${data[d.id] === o ? "selected" : ""}" onclick="pickOne('${d.id}','${o.replace(/'/g, "\\'")}',this)"><span class="radio">✓</span>${o}</div>`).join("")}</div>
+          <div class="error-msg" id="err"></div>`;
+        break;
+      case "level":
+        html = `<div class="q-label">${roleLabel()}</div>
+          <div class="q-title">${d.label}</div><div class="q-hint">Cycle : <b>${data.cycle}</b></div>
+          <div class="opt-grid">${(LEVELS[data.cycle] || []).map((o) => `<div class="opt ${data.level === o ? "selected" : ""}" onclick="pickOne('level','${o.replace(/'/g, "\\'")}',this)"><span class="radio">✓</span>${o}</div>`).join("")}</div>
+          <div class="error-msg" id="err"></div>`;
+        break;
+      case "chips":
+        html = `<div class="q-label">${roleLabel()}</div>
+          <div class="q-title">${d.label}</div><div class="q-hint">${d.hint}</div>
+          <div class="chips">${d.options.map((o) => `<div class="chip ${(data[d.id] || []).includes(o) ? "selected" : ""}" onclick="toggleChip('${d.id}','${o.replace(/'/g, "\\'")}',this)">${o}</div>`).join("")}</div>
+          <div class="error-msg" id="err"></div>`;
+        break;
+      case "slider":
+        const v = data[d.id] != null ? data[d.id] : 3;
+        html = `<div class="q-label">${roleLabel()}</div>
+          <div class="q-title">${d.label}</div><div class="q-hint">${d.hint}</div>
+          <div class="slider-val" id="sliderVal">${v} an${v > 1 ? "s" : ""}</div>
+          <input type="range" id="range" min="${d.min}" max="${d.max}" value="${v}" style="--fill:${((v - d.min) / (d.max - d.min)) * 100}%" />`;
+        break;
+      case "summary": html = summaryHTML(); break;
+    }
+    content.innerHTML = html;
+    mount(d);
+    validate();
+    const inp = content.querySelector("#inp");
+    if (inp) setTimeout(() => inp.focus(), 50);
+  }
+
+  function roleLabel() {
+    return role === "student" ? "Profil élève" : "Profil enseignant";
+  }
+
+  function roleHTML() {
+    return `<div class="q-label">Bienvenue</div>
+      <div class="q-title">Qui êtes-vous ?</div>
+      <div class="q-hint">Les questions suivantes s'adapteront à votre profil.</div>
+      <div class="role-cards">
+        <div class="role stu ${role === "student" ? "selected" : ""}" onclick="pickRole('student')">
+          <div class="emoji">🎓</div><b>Élève</b><span>Primaire · Collège · Lycée</span>
+        </div>
+        <div class="role tea ${role === "teacher" ? "selected" : ""}" onclick="pickRole('teacher')">
+          <div class="emoji">🧑‍🏫</div><b>Enseignant</b><span>Publier des documents</span>
+        </div>
+      </div>`;
+  }
+
+  function summaryHTML() {
+    const items = steps.filter((s) => s.type !== "summary").map((s) => {
+      let v = data[s.id];
+      if (Array.isArray(v)) v = v.join(", ");
+      if (v == null || v === "") v = "—";
+      return `<div class="summary-row"><span>${s.label}</span><b>${v}</b></div>`;
+    }).join("");
+    const av = role === "student" ? "🎓" : "🧑‍🏫";
+    return `<div class="q-label">Dernière étape</div>
+      <div class="q-title">Votre profil est prêt ✨</div>
+      <div class="q-hint">Vérifiez vos informations avant de créer votre compte.</div>
+      <div class="summary-card">
+        <div class="summary-head"><span class="av">${av}</span>Compte ${role === "student" ? "Élève" : "Enseignant"} <span style="margin-left:auto;font-size:.82rem;color:var(--muted)">${data.email || ""}</span></div>
+        ${items}
+      </div>`;
+  }
+
+  function mount(d) {
+    const err = content.querySelector("#err");
+    if (d.type === "text" || d.type === "email" || d.type === "tel") {
+      const inp = content.querySelector("#inp");
+      inp.addEventListener("input", () => { data[d.id] = inp.value.trim(); validate(); });
+    }
+    if (d.type === "password") {
+      const inp = content.querySelector("#inp");
+      const fill = content.querySelector("#strFill");
+      const lbl = content.querySelector("#strLabel");
+      inp.addEventListener("input", () => {
+        data[d.id] = inp.value;
+        const n = inp.value.length;
+        let c, w, t;
+        if (n < 6) { c = "#eab308"; w = "40%"; t = "Sécurité : moyenne"; }
+        if (n >= 10) { c = "#22c08a"; w = "75%"; t = "Sécurité : bonne"; }
+        if (n >= 14) { c = "#159a63"; w = "100%"; t = "Sécurité : excellente"; }
+        fill.style.width = w; fill.style.background = c; lbl.textContent = t;
+        validate();
+      });
+    }
+    if (d.type === "slider") {
+      const r = content.querySelector("#range");
+      const out = content.querySelector("#sliderVal");
+      r.addEventListener("input", () => {
+        const v = +r.value;
+        data[d.id] = v;
+        out.textContent = v + " an" + (v > 1 ? "s" : "");
+        r.style.setProperty("--fill", ((v - d.min) / (d.max - d.min)) * 100 + "%");
+      });
+    }
+  }
+
+  function pickRole(r) {
+    role = r; data.role = r;
+    data.cycle = undefined; data.level = undefined; data.section = undefined;
+    document.getElementById("pillStudent").classList.toggle("active", r === "student");
+    document.getElementById("pillTeacher").classList.toggle("active", r === "teacher");
+    document.getElementById("pillTeacher").classList.toggle("tea", r === "teacher");
+    buildSteps(); render();
+  }
+  window.pickRole = pickRole;
+
+  function pickOne(id, value, el) {
+    data[id] = value;
+    content.querySelectorAll(".opt").forEach((x) => x.classList.remove("selected"));
+    el.classList.add("selected");
+    validate();
+  }
+  window.pickOne = pickOne;
+
+  function toggleChip(id, value, el) {
+    if (!data[id]) data[id] = [];
+    const arr = data[id], i = arr.indexOf(value);
+    if (i >= 0) { arr.splice(i, 1); el.classList.remove("selected"); }
+    else { arr.push(value); el.classList.add("selected"); }
+    validate();
+  }
+  window.toggleChip = toggleChip;
+
+  function validate() {
+    const d = steps[idx];
+    const err = content.querySelector("#err");
+    const next = document.getElementById("btnNext");
+    if (d.type === "summary" || d.type === "role") { next.disabled = false; return; }
+    let ok = true;
+    if (d.type === "text" || d.type === "email" || d.type === "tel") ok = !!data[d.id];
+    if (d.type === "password") ok = (data[d.id] || "").length >= 6;
+    if (d.type === "single" || d.type === "level") ok = !!data[d.id];
+    if (d.type === "chips") ok = (data[d.id] || []).length > 0;
+    if (d.optional) ok = true;
+    next.disabled = !ok;
+    if (err) err.classList.toggle("show", !ok);
+  }
+
+  function go(dir) {
+    if (dir === 1 && document.getElementById("btnNext").disabled) return;
+    const d = steps[idx];
+    if (dir === 1 && d.type === "summary") { finish(); return; }
+    if (idx + dir >= 0 && idx + dir < steps.length) { idx += dir; render(); }
+  }
+  window.go = go;
+
+  function finish() {
+    console.log("Inscription soumise :", JSON.stringify(data, null, 2));
+    content.innerHTML = `<div class="success show">
+      <div class="check">✓</div>
+      <h2>Compte créé !</h2>
+      <p>Votre demande d'inscription a bien été envoyée. Un administrateur doit encore l'approuver avant que vous puissiez vous connecter.</p>
+    </div>`;
+    document.querySelector(".nav-row").style.display = "none";
+    document.querySelector(".right-top").style.display = "none";
+  }
+
+  /* role pills also switch */
+  document.getElementById("pillStudent").addEventListener("click", () => { if (role !== "student") pickRole("student"); });
+  document.getElementById("pillTeacher").addEventListener("click", () => { if (role !== "teacher") pickRole("teacher"); });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") go(1);
+    if (e.key === "ArrowLeft" && !e.metaKey) go(-1);
+  });
+
+  buildSteps();
+  render();
+</script>
+</body>
+</html>

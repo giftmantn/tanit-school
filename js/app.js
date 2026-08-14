@@ -186,31 +186,40 @@ async function loadFavIds() {
 }
 
 // ---------- Level / subject fetch ----------
-async function fetchLevels() {
+// One shared safe wrapper: never throws, logs any DB error to the console so
+// a single bad query can't blank the rest of the page.
+async function safeSelect(table, columns, orderBy) {
   if (!sb) return [];
-  const { data } = await sb.from("levels").select("*").order("ord");
-  return data || [];
+  try {
+    const q = sb.from(table).select(columns);
+    if (orderBy) q.order(orderBy);
+    const { data, error } = await q;
+    if (error) console.error(`fetch ${table}:`, error.message);
+    return data || [];
+  } catch (e) {
+    console.error(`fetch ${table}:`, e.message);
+    return [];
+  }
+}
+
+async function fetchLevels() {
+  return safeSelect("levels", "*", "ord");
 }
 
 async function fetchSubjects() {
-  if (!sb) return [];
-  const { data } = await sb.from("subjects").select("*").order("ord");
-  return data || [];
+  return safeSelect("subjects", "*", "ord");
 }
 
 // Sections (filières) — only meaningful for 2ème→4ème secondaire.
 async function fetchSections() {
-  if (!sb) return [];
-  const { data } = await sb.from("sections").select("*").order("ord");
-  return data || [];
+  return safeSelect("sections", "*", "ord");
 }
 
 // Returns { [level_id]: [section_id, ...] }
 async function fetchLevelSections() {
-  if (!sb) return {};
-  const { data } = await sb.from("level_sections").select("level_id, section_id");
+  const rows = await safeSelect("level_sections", "level_id, section_id");
   const map = {};
-  (data || []).forEach((r) => {
+  (rows || []).forEach((r) => {
     (map[r.level_id] = map[r.level_id] || []).push(r.section_id);
   });
   return map;
@@ -218,10 +227,9 @@ async function fetchLevelSections() {
 
 // Returns { [level_id]: [subject_id, ...] }
 async function fetchLevelSubjects() {
-  if (!sb) return {};
-  const { data } = await sb.from("level_subjects").select("level_id, subject_id");
+  const rows = await safeSelect("level_subjects", "level_id, subject_id");
   const map = {};
-  (data || []).forEach((r) => {
+  (rows || []).forEach((r) => {
     (map[r.level_id] = map[r.level_id] || []).push(r.subject_id);
   });
   return map;
@@ -229,10 +237,9 @@ async function fetchLevelSubjects() {
 
 // Returns { [section_id]: [subject_id, ...] }
 async function fetchSectionSubjects() {
-  if (!sb) return {};
-  const { data } = await sb.from("section_subjects").select("section_id, subject_id");
+  const rows = await safeSelect("section_subjects", "section_id, subject_id");
   const map = {};
-  (data || []).forEach((r) => {
+  (rows || []).forEach((r) => {
     (map[r.section_id] = map[r.section_id] || []).push(r.subject_id);
   });
   return map;

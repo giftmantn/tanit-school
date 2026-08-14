@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aperçu des concepts — Tanit School</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Segoe UI", "Tahoma", system-ui, sans-serif; background: #f4f6fb; color: #0f172a; line-height: 1.6; padding: 40px 20px 70px; }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 1.9rem; letter-spacing: -.02em; }
+  p.lead { color: #64748b; margin: 8px 0 34px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+  .card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 8px 24px -14px rgba(15, 23, 42, .25); display: flex; flex-direction: column;
+    transition: transform .15s, box-shadow .2s;
+  }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 16px 34px -16px rgba(15, 23, 42, .35); }
+  .preview {
+    aspect-ratio: 16/9; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 1rem;
+    position: relative; text-align: center; padding: 16px;
+  }
+  .p1 { background: linear-gradient(135deg, #eaf1ff, #fff1e0); color: #2f5bff; }
+  .p2 { background: linear-gradient(135deg, #0b1023, #1a1140); color: #22d3ee; }
+  .p3 { background: #fff; color: #0f766e; border-bottom: 1px solid #e2e8f0; }
+  .p4 { background: linear-gradient(135deg, #101c26, #0e2a33); color: #4de0c6; }
+  .body { padding: 18px 20px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .body h3 { font-size: 1.05rem; }
+  .body p { color: #64748b; font-size: .88rem; flex: 1; }
+  .tag-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { font-size: .72rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: #eef2ff; color: #4338ca; }
+  .open { display: inline-flex; justify-content: center; padding: 10px; border-radius: 10px; background: #1d4ed8; color: #fff; font-weight: 700; font-size: .88rem; text-decoration: none; margin-top: 6px; }
+  .open:hover { background: #1e40af; }
+  .open.new { background: #0e9f8a; } .open.new:hover { background: #0b7f6f; }
+  .note { margin-top: 40px; padding: 18px 20px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 14px; font-size: .9rem; color: #92400e; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🎨 Concepts alternatifs — Tanit School</h1>
+    <p class="lead">Quatre directions visuelles différentes pour renouveler le site. Ouvrez chaque concept pour le voir en plein écran.</p>
+
+    <div class="grid">
+      <div class="card">
+        <div class="preview p1">🌞 Page d'accueil · clair & ludique</div>
+        <div class="body">
+          <h3>Concept 1 — « Soleil »</h3>
+          <p>Version claire et chaleureuse : dégradés pastel, formes flottantes, boutons arrondis. Esprit accessible et rassurant, pensé pour les plus jeunes élèves.</p>
+          <div class="tag-row"><span class="tag">Accueil</span><span class="tag">Clair</span><span class="tag">Ludique</span></div>
+          <a class="open" href="concept-1-home-soleil.html">Ouvrir le concept →</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="preview p2">🌌 Page d'accueil · sombre & futuriste</div>
+        <div class="body">
+          <h3>Concept 2 — « Nocturne »</h3>
+          <p>Version sombre « glassmorphism » : effet de verre, halos lumineux, dégradés cyan/violet. Ambiance moderne et immersive, idéale pour le mode nuit.</p>
+          <div class="tag-row"><span class="tag">Accueil</span><span class="tag">Sombre</span><span class="tag">Glassmorphism</span></div>
+          <a class="open" href="concept-2-home-nocturne.html">Ouvrir le concept →</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="preview p3">📚 Bibliothèque · sobre & éditoriale</div>
+        <div class="body">
+          <h3>Concept 3 — « Bibliothèque »</h3>
+          <p>Version épurée et typographique pour la bibliothèque : barre de filtres sticky, liste de résultats lisible, pagination discrète. Priorité au contenu.</p>
+          <div class="tag-row"><span class="tag">Bibliothèque</span><span class="tag">Éditorial</span><span class="tag">Minimal</span></div>
+          <a class="open" href="concept-3-library-editorial.html">Ouvrir le concept →</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="preview p4">🧑‍🏫 Espace enseignant · dashboard « Studio »</div>
+        <div class="body">
+          <h3>Concept 4 — « Studio »</h3>
+          <p>Tableau de bord complet pour l'enseignant : sidebar sombre, statistiques, formulaire de publication et table des documents. Palette émeraude professionnelle.</p>
+          <div class="tag-row"><span class="tag">Enseignant</span><span class="tag">Dashboard</span><span class="tag">Professionnel</span></div>
+          <a class="open new" href="concept-4-teacher-studio.html">Ouvrir le concept →</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="note">
+      <b>💡 Astuce :</b> chaque concept est un fichier autonome (HTML + CSS intégré) : vous pouvez l'ouvrir directement dans le navigateur sans serveur ni base de données.
+    </div>
+  </div>
+</body>
+</html>
