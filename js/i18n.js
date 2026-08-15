@@ -181,6 +181,7 @@ const I18N = {
     "admin.section.levels": "المستويات المعنية",
     "admin.section.subjects_title": "مواد الشعب",
     "browse.all_sections": "كل الشعب",
+    "browse.all_types": "كل الأنواع",
     "teacher.doc.section": "الشعبة",
     "teacher.doc.section_required": "الشعبة إجبارية لهذا المستوى",
     // Misc
@@ -361,6 +362,7 @@ const I18N = {
     "admin.section.levels": "Niveaux concernés",
     "admin.section.subjects_title": "Matières de la section",
     "browse.all_sections": "Toutes les sections",
+    "browse.all_types": "Tous les types",
     "teacher.doc.section": "Section",
     "teacher.doc.section_required": "La section est obligatoire pour ce niveau",
     "misc.loading": "Chargement...",
@@ -540,6 +542,7 @@ const I18N = {
     "admin.section.levels": "Applicable levels",
     "admin.section.subjects_title": "Section subjects",
     "browse.all_sections": "All sections",
+    "browse.all_types": "All types",
     "teacher.doc.section": "Section",
     "teacher.doc.section_required": "Section is required for this level",
     "misc.loading": "Loading...",

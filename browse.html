@@ -30,6 +30,7 @@
       <select id="levelFilter" class="input"></select>
       <select id="subjectFilter" class="input"></select>
       <select id="sectionFilter" class="input" style="display:none"></select>
+      <select id="typeFilter" class="input"></select>
     </div>
 
     <div id="results" class="card-row"></div>
@@ -79,6 +80,7 @@
       const levelSel = document.getElementById("levelFilter");
       const subjectSel = document.getElementById("subjectFilter");
       const sectionSel = document.getElementById("sectionFilter");
+      const typeSel = document.getElementById("typeFilter");
       levelSel.innerHTML = `<option value="">${t("browse.all_levels")}</option>` +
         optionList(levels, null, (l) => l[`name_${getLang()}`] || l.name_fr);
       subjectSel.innerHTML = `<option value="">${t("browse.all_subjects")}</option>` +
@@ -86,12 +88,18 @@
       levelSel.addEventListener("change", () => { updateSectionFilter(); updateSubjectFilter(); render(); });
       subjectSel.addEventListener("change", render);
       sectionSel.addEventListener("change", () => { updateSubjectFilter(); render(); });
+      typeSel.innerHTML = `<option value="">${t("browse.all_types")}</option>` +
+        ["cours", "manuel_officiel", "series_exercices", "examen", "autre"]
+          .map((ty) => `<option value="${ty}">${escapeHtml(t("teacher.doc.type." + ty))}</option>`)
+          .join("");
+      typeSel.addEventListener("change", render);
       document.getElementById("searchInput").addEventListener("input", render);
       document.getElementById("clearFilters").addEventListener("click", () => {
         levelSel.value = "";
         subjectSel.value = "";
         sectionSel.value = "";
         sectionSel.style.display = "none";
+        typeSel.value = "";
         document.getElementById("searchInput").value = "";
         updateSubjectFilter();
         render();
@@ -146,12 +154,14 @@
       const lv = document.getElementById("levelFilter").value;
       const sub = document.getElementById("subjectFilter").value;
       const sec = document.getElementById("sectionFilter").value;
+      const typ = document.getElementById("typeFilter").value;
       const lang = getLang();
 
       const filtered = allDocs.filter((d) => {
         if (lv && d.level_id !== lv) return false;
         if (sub && d.subject_id !== sub) return false;
         if (sec && d.section_id !== sec) return false;
+        if (typ && d.doc_type !== typ) return false;
         if (q) {
           const hay = [d.title_fr, d.title_ar, d.title_en, d.desc_fr, d.desc_ar, d.desc_en].join(" ").toLowerCase();
           if (!hay.includes(q)) return false;
