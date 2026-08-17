@@ -195,6 +195,9 @@ const I18N = {
     "misc.no": "لا",
     "misc.optional": "اختياري",
     "footer.rights": "مدرسة تانيت — جميع الحقوق محفوظة",
+    "stats.docs": "مستند متاح",
+    "stats.levels": "مستوى دراسي",
+    "stats.users": "تلميذ مسجّل",
   },
   fr: {
     dir: "ltr",
@@ -375,6 +378,9 @@ const I18N = {
     "misc.no": "Non",
     "misc.optional": "facultatif",
     "footer.rights": "Tanit School — Tous droits réservés",
+    "stats.docs": "documents disponibles",
+    "stats.levels": "niveaux couverts",
+    "stats.users": "élèves inscrits",
   },
   en: {
     dir: "ltr",
@@ -555,6 +561,9 @@ const I18N = {
     "misc.no": "No",
     "misc.optional": "optional",
     "footer.rights": "Tanit School — All rights reserved",
+    "stats.docs": "documents available",
+    "stats.levels": "levels covered",
+    "stats.users": "registered students",
   },
 };
 
