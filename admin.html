@@ -24,6 +24,7 @@
       <button data-tab="levels" data-i18n="admin.tab.levels"></button>
       <button data-tab="subjects" data-i18n="admin.tab.subjects"></button>
       <button data-tab="sections" data-i18n="admin.tab.sections"></button>
+      <button data-tab="doctypes" data-i18n="admin.tab.doctypes"></button>
     </div>
 
     <div id="alertBox" class="alert"></div>
@@ -186,6 +187,45 @@
       </div>
     </div>
 
+    <!-- DOCUMENT TYPES -->
+    <div id="tab-doctypes" class="hidden">
+      <div class="card" style="margin-bottom:20px">
+        <form id="docTypeForm" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;align-items:end">
+          <div class="field" style="margin:0">
+            <label data-i18n="admin.doctype.name_fr"></label>
+            <input type="text" id="docTypeFr" class="input" required />
+          </div>
+          <div class="field" style="margin:0">
+            <label data-i18n="admin.doctype.name_ar"></label>
+            <input type="text" id="docTypeAr" class="input" required />
+          </div>
+          <div class="field" style="margin:0">
+            <label data-i18n="admin.doctype.name_en"></label>
+            <input type="text" id="docTypeEn" class="input" required />
+          </div>
+          <div class="field" style="margin:0">
+            <label data-i18n="admin.doctype.order"></label>
+            <input type="number" id="docTypeOrd" class="input" value="0" />
+          </div>
+          <button type="submit" class="btn" data-i18n="admin.add"></button>
+        </form>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th data-i18n="admin.doctype.name_fr"></th>
+              <th data-i18n="admin.doctype.name_ar"></th>
+              <th data-i18n="admin.doctype.name_en"></th>
+              <th data-i18n="admin.doctype.order"></th>
+              <th data-i18n="admin.actions"></th>
+            </tr>
+          </thead>
+          <tbody id="docTypesBody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- LEVEL SUBJECTS MODAL -->
     <div id="levelSubjectsModal" class="modal hidden">
       <div class="modal-box">
@@ -210,6 +250,7 @@
     let levels = [];
     let subjects = [];
     let sections = [];
+    let docTypes = [];
     let sectionsByLevel = {};
     let subjectsByLevel = {};
     let subjectsBySection = {};
@@ -227,7 +268,7 @@
         b.addEventListener("click", () => {
           document.querySelectorAll(".tabs button").forEach((x) => x.classList.remove("active"));
           b.classList.add("active");
-          ["users", "documents", "levels", "subjects", "sections"].forEach((tab) => {
+          ["users", "documents", "levels", "subjects", "sections", "doctypes"].forEach((tab) => {
             document.getElementById("tab-" + tab).classList.toggle("hidden", tab !== b.dataset.tab);
           });
         });
@@ -295,6 +336,23 @@
         renderSectionLevelChecks();
       });
 
+      document.getElementById("docTypeForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearAlert("alertBox");
+        const payload = {
+          name_fr: document.getElementById("docTypeFr").value.trim(),
+          name_ar: document.getElementById("docTypeAr").value.trim(),
+          name_en: document.getElementById("docTypeEn").value.trim(),
+          ord: parseInt(document.getElementById("docTypeOrd").value, 10) || 0,
+        };
+        const { error } = await sb.from("document_types").insert(payload);
+        if (error) { showAlert("alertBox", t("misc.error") + " (" + error.message + ")", "error"); return; }
+        e.target.reset();
+        showAlert("alertBox", t("admin.saved"), "success");
+        docTypes = await fetchDocTypes();
+        renderDocTypes();
+      });
+
       document.getElementById("levelSubjectsCancel").addEventListener("click", closeLevelSubjects);
       document.getElementById("levelSubjectsSave").addEventListener("click", saveLevelSubjects);
       document.getElementById("levelSubjectsModal").addEventListener("click", (e) => {
@@ -359,14 +417,15 @@
     }
 
     async function loadAll() {
-      const [l, s, sec, ls, lsub, ssub] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections(), fetchLevelSections(), fetchLevelSubjects(), fetchSectionSubjects()]);
+      const [l, s, sec, dt, ls, lsub, ssub] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections(), fetchDocTypes(), fetchLevelSections(), fetchLevelSubjects(), fetchSectionSubjects()]);
       levels = l;
       subjects = s;
       sections = sec;
+      docTypes = dt;
       sectionsByLevel = ls;
       subjectsByLevel = lsub;
       subjectsBySection = ssub;
-      await Promise.all([loadUsers(), loadDocs(), renderLevels(), renderSubjects(), renderSections(), renderSectionLevelChecks()]);
+      await Promise.all([loadUsers(), loadDocs(), renderLevels(), renderSubjects(), renderSections(), renderSectionLevelChecks(), renderDocTypes()]);
     }
 
     async function loadUsers() {
@@ -553,6 +612,28 @@
         <label style="display:inline-flex;align-items:center;gap:6px;font-size:.9rem">
           <input type="checkbox" value="${l.id}" checked /> ${escapeHtml(l[`name_${getLang()}`] || l.name_fr)}
         </label>`).join("") || `<span style="color:var(--muted)">-</span>`;
+    }
+
+    function renderDocTypes() {
+      const tbody = document.getElementById("docTypesBody");
+      tbody.innerHTML = "";
+      docTypes.forEach((dt) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(dt.name_fr)}</td>
+          <td>${escapeHtml(dt.name_ar)}</td>
+          <td>${escapeHtml(dt.name_en)}</td>
+          <td>${dt.ord}</td>
+          <td><button class="btn btn-sm btn-accent del-docType" data-id="${dt.id}">${t("admin.delete")}</button></td>`;
+        tr.querySelector(".del-docType").addEventListener("click", async () => {
+          if (!confirm(t("misc.confirm_delete"))) return;
+          await sb.from("document_types").delete().eq("id", dt.id);
+          docTypes = await fetchDocTypes();
+          renderDocTypes();
+          showAlert("alertBox", t("admin.deleted"), "success");
+        });
+        tbody.appendChild(tr);
+      });
     }
   </script>
 </body>

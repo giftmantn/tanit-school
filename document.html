@@ -44,7 +44,7 @@
         return;
       }
 
-      const [levels, subjects, sections] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections()]);
+      const [levels, subjects, sections, docTypes] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections(), fetchDocTypes()]);
       const level = levels.find((l) => l.id === doc.level_id);
       const subject = subjects.find((s) => s.id === doc.subject_id);
       const section = sections.find((s) => s.id === doc.section_id);
@@ -71,7 +71,7 @@
             <a href="browse.html" class="btn btn-ghost btn-sm" style="margin-bottom:10px">&larr; ${t("misc.back")}</a>
             <h1>${escapeHtml(title)}</h1>
             <div class="doc-meta" style="margin-top:10px">
-              ${doc.doc_type ? `<span class="chip">${escapeHtml(docTypeLabel(doc))}</span>` : ""}
+              ${doc.doc_type_id ? `<span class="chip">${escapeHtml(docTypeLabel(doc, docTypes))}</span>` : ""}
               ${level ? `<span class="chip primary">${escapeHtml(level[`name_${lang}`] || level.name_fr)}</span>` : ""}
               ${subject ? `<span class="chip accent">${escapeHtml(subject[`name_${lang}`] || subject.name_fr)}</span>` : ""}
               ${section ? `<span class="chip neutral">${escapeHtml(section[`name_${lang}`] || section.name_fr)}</span>` : ""}

@@ -51,6 +51,7 @@
     let levels = [];
     let subjects = [];
     let sections = [];
+    let docTypes = [];
     let sectionsByLevel = {};
     let subjectsByLevel = {};
     let subjectsBySection = {};
@@ -64,10 +65,11 @@
       isLoggedIn = !!session;
       renderNavbar(profile);
 
-      const [l, s, sec, ls, lsub, ssub] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections(), fetchLevelSections(), fetchLevelSubjects(), fetchSectionSubjects()]);
+      const [l, s, sec, dt, ls, lsub, ssub] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections(), fetchDocTypes(), fetchLevelSections(), fetchLevelSubjects(), fetchSectionSubjects()]);
       levels = l;
       subjects = s;
       sections = sec;
+      docTypes = dt;
       sectionsByLevel = ls;
       subjectsByLevel = lsub;
       subjectsBySection = ssub;
@@ -89,9 +91,7 @@
       subjectSel.addEventListener("change", render);
       sectionSel.addEventListener("change", () => { updateSubjectFilter(); render(); });
       typeSel.innerHTML = `<option value="">${t("browse.all_types")}</option>` +
-        ["cours", "manuel_officiel", "series_exercices", "examen", "autre"]
-          .map((ty) => `<option value="${ty}">${escapeHtml(t("teacher.doc.type." + ty))}</option>`)
-          .join("");
+        docTypes.map((dt) => `<option value="${dt.id}">${escapeHtml(dt[`name_${getLang()}`] || dt.name_fr)}</option>`).join("");
       typeSel.addEventListener("change", render);
       document.getElementById("searchInput").addEventListener("input", render);
       document.getElementById("clearFilters").addEventListener("click", () => {
@@ -161,7 +161,7 @@
         if (lv && d.level_id !== lv) return false;
         if (sub && d.subject_id !== sub) return false;
         if (sec && d.section_id !== sec) return false;
-        if (typ && d.doc_type !== typ) return false;
+        if (typ && d.doc_type_id !== typ) return false;
         if (q) {
           const hay = [d.title_fr, d.title_ar, d.title_en, d.desc_fr, d.desc_ar, d.desc_en].join(" ").toLowerCase();
           if (!hay.includes(q)) return false;
@@ -179,7 +179,7 @@
       }
       empty.classList.add("hidden");
       document.getElementById("clearFilters").style.display = "inline-flex";
-      filtered.forEach((d) => results.appendChild(docCard(d, levels, subjects, sections, favIds, isLoggedIn)));
+      filtered.forEach((d) => results.appendChild(docCard(d, levels, subjects, sections, favIds, isLoggedIn, docTypes)));
     }
   </script>
 </body>

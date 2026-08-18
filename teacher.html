@@ -87,17 +87,7 @@
             </div>
             <div class="field">
               <label data-i18n="teacher.doc.type"></label>
-              <select id="docType" class="input">
-                <option value="cours" data-i18n="teacher.doc.type.cours"></option>
-                <option value="manuel_officiel" data-i18n="teacher.doc.type.manuel_officiel"></option>
-                <option value="series_exercices" data-i18n="teacher.doc.type.series_exercices"></option>
-                <option value="examen" data-i18n="teacher.doc.type.examen"></option>
-                <option value="autre" data-i18n="teacher.doc.type.autre"></option>
-              </select>
-            </div>
-            <div class="field" id="docTypeOtherField" style="display:none">
-              <label data-i18n="teacher.doc.type_other"></label>
-              <input type="text" id="docTypeOther" class="input" maxlength="60" />
+              <select id="docType" class="input"></select>
             </div>
             <div class="field">
               <label data-i18n="teacher.doc.drive_url"></label>
@@ -149,13 +139,8 @@
     let sectionsByLevel = {};
     let subjectsByLevel = {};
     let subjectsBySection = {};
+    let docTypes = [];
     let editingId = null;
-
-    function toggleDocTypeOther() {
-      const sel = document.getElementById("docType");
-      const field = document.getElementById("docTypeOtherField");
-      if (sel && field) field.style.display = sel.value === "autre" ? "" : "none";
-    }
 
     document.addEventListener("DOMContentLoaded", async () => {
       initSupabase();
@@ -164,24 +149,25 @@
       if (!auth) return;
       renderNavbar(auth.profile);
 
-      const [l, s, sec, ls, lsub, ssub] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections(), fetchLevelSections(), fetchLevelSubjects(), fetchSectionSubjects()]);
+      const [l, s, sec, dt, ls, lsub, ssub] = await Promise.all([fetchLevels(), fetchSubjects(), fetchSections(), fetchDocTypes(), fetchLevelSections(), fetchLevelSubjects(), fetchSectionSubjects()]);
       levels = l;
       subjects = s;
       sections = sec;
+      docTypes = dt;
       sectionsByLevel = ls;
       subjectsByLevel = lsub;
       subjectsBySection = ssub;
 
       const levelSel = document.getElementById("levelSelect");
       const subjectSel = document.getElementById("subjectSelect");
+      const docTypeSel = document.getElementById("docType");
       levelSel.innerHTML = optionList(levels, null, (x) => x[`name_${getLang()}`] || x.name_fr);
+      docTypeSel.innerHTML = `<option value="">${t("browse.all_types")}</option>` +
+        docTypes.map((dt) => `<option value="${dt.id}">${escapeHtml(dt[`name_${getLang()}`] || dt.name_fr)}</option>`).join("");
       updateSubjectSelect();
       levelSel.addEventListener("change", () => { updateSectionSelect(); updateSubjectSelect(); });
       updateSectionSelect();
       document.getElementById("sectionSelect").addEventListener("change", () => updateSubjectSelect());
-
-      document.getElementById("docType").addEventListener("change", toggleDocTypeOther);
-      toggleDocTypeOther();
 
       await loadMyDocs();
 
@@ -211,10 +197,7 @@
           desc_fr: document.getElementById("descFr").value.trim(),
           desc_ar: document.getElementById("descAr").value.trim(),
           desc_en: document.getElementById("descEn").value.trim(),
-          doc_type: document.getElementById("docType").value,
-          doc_type_other: document.getElementById("docType").value === "autre"
-            ? (document.getElementById("docTypeOther").value.trim() || null)
-            : null,
+          doc_type_id: document.getElementById("docType").value || null,
           level_id: levelId,
           subject_id: subjectSel.value,
           section_id: sectionId,
@@ -395,9 +378,7 @@
       document.getElementById("descFr").value = d.desc_fr || "";
       document.getElementById("descAr").value = d.desc_ar || "";
       document.getElementById("descEn").value = d.desc_en || "";
-      document.getElementById("docType").value = d.doc_type || "cours";
-      document.getElementById("docTypeOther").value = d.doc_type_other || "";
-      toggleDocTypeOther();
+      document.getElementById("docType").value = d.doc_type_id || "";
       document.getElementById("levelSelect").value = d.level_id;
       updateSectionSelect();
       document.getElementById("sectionSelect").value = d.section_id || "";
@@ -411,8 +392,6 @@
     function resetForm() {
       editingId = null;
       document.getElementById("docForm").reset();
-      document.getElementById("docType").value = "cours";
-      toggleDocTypeOther();
       updateSectionSelect();
       updateSubjectSelect();
       document.getElementById("submitBtn").textContent = t("teacher.doc.submit");

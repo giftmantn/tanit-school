@@ -255,6 +255,23 @@ create trigger document_section_check
   before insert or update on public.documents
   for each row execute procedure public.check_document_section();
 
+-- ---------- DOCUMENT TYPES ----------
+create table if not exists public.document_types (
+  id uuid primary key default gen_random_uuid(),
+  name_fr text not null unique,
+  name_ar text not null,
+  name_en text not null,
+  ord int default 0
+);
+
+insert into public.document_types (name_fr, name_ar, name_en, ord) values
+  ('Cours',             'درس',            'Lesson',             1),
+  ('Manuel officiel',   'الكتاب المدرسي الرسمي', 'Official textbook', 2),
+  ('Série d''exercices','سلسلة تمارين',   'Exercise series',    3),
+  ('Examen',            'امتحان',         'Exam',               4),
+  ('Autre',             'أخرى',           'Other',              5)
+on conflict do nothing;
+
 -- ---------- DOCUMENTS ----------
 create table if not exists public.documents (
   id uuid primary key default gen_random_uuid(),
@@ -266,6 +283,7 @@ create table if not exists public.documents (
   desc_en text default '',
   doc_type text not null default 'cours',
   doc_type_other text,
+  doc_type_id uuid references public.document_types(id) on delete set null,
   level_id uuid references public.levels(id) on delete set null,
   subject_id uuid references public.subjects(id) on delete set null,
   drive_url text not null,
@@ -294,6 +312,7 @@ alter table public.sections  enable row level security;
 alter table public.level_sections enable row level security;
 alter table public.level_subjects enable row level security;
 alter table public.section_subjects enable row level security;
+alter table public.document_types enable row level security;
 alter table public.documents enable row level security;
 alter table public.favorites enable row level security;
 
@@ -394,6 +413,22 @@ create policy "section_subjects_delete_admin" on public.section_subjects for del
   exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 
+-- --- DOCUMENT TYPES ---
+drop policy if exists "document_types_select" on public.document_types;
+create policy "document_types_select" on public.document_types for select using (true);
+drop policy if exists "document_types_insert_admin" on public.document_types;
+create policy "document_types_insert_admin" on public.document_types for insert with check (
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+);
+drop policy if exists "document_types_update_admin" on public.document_types;
+create policy "document_types_update_admin" on public.document_types for update using (
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+);
+drop policy if exists "document_types_delete_admin" on public.document_types;
+create policy "document_types_delete_admin" on public.document_types for delete using (
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+);
+
 -- --- DOCUMENTS ---
 -- Everyone can read approved documents.
 drop policy if exists "documents_select_public" on public.documents;
@@ -479,6 +514,29 @@ where k.name_fr = dup.name_fr and dup.id > k.id;
 create unique index if not exists levels_name_fr_key   on public.levels   (name_fr);
 create unique index if not exists subjects_name_fr_key on public.subjects (name_fr);
 create unique index if not exists sections_name_fr_key on public.sections (name_fr);
+
+-- ============================================================
+-- DOCUMENT TYPES MIGRATION
+-- Backfill doc_type_id from the legacy doc_type text column.
+-- Safe to re-run (only touches rows where doc_type_id is null).
+-- ============================================================
+alter table public.documents add column if not exists
+  doc_type_id uuid references public.document_types(id) on delete set null;
+
+update public.documents d
+set doc_type_id = dt.id
+from public.document_types dt
+where d.doc_type_id is null
+  and dt.name_fr = case d.doc_type
+    when 'cours' then 'Cours'
+    when 'manuel_officiel' then 'Manuel officiel'
+    when 'series_exercices' then 'Série d''exercices'
+    when 'examen' then 'Examen'
+    when 'autre' then 'Autre'
+    else 'Autre'
+  end;
+
+create unique index if not exists document_types_name_fr_key on public.document_types (name_fr);
 
 -- ============================================================
 -- STORAGE (if you ever want to upload files directly)

@@ -116,7 +116,11 @@ function driveThumbUrl(url) {
 }
 
 // Label for a document type, translated to the current language.
-function docTypeLabel(doc) {
+function docTypeLabel(doc, docTypes) {
+  if (doc.doc_type_id && docTypes) {
+    const dt = docTypes.find((d) => d.id === doc.doc_type_id);
+    if (dt) return dt[`name_${getLang()}`] || dt.name_fr;
+  }
   const type = doc.doc_type || "cours";
   let label = t("teacher.doc.type." + type) || type;
   if (type === "autre" && doc.doc_type_other) label += " — " + doc.doc_type_other;
@@ -124,7 +128,7 @@ function docTypeLabel(doc) {
 }
 
 // ---------- Document card ----------
-function docCard(doc, levels, subjects, sections, favIds, isLoggedIn) {
+function docCard(doc, levels, subjects, sections, favIds, isLoggedIn, docTypes) {
   const level = levels.find((l) => l.id === doc.level_id);
   const subject = subjects.find((s) => s.id === doc.subject_id);
   const section = sections.find((s) => s.id === doc.section_id);
@@ -132,6 +136,7 @@ function docCard(doc, levels, subjects, sections, favIds, isLoggedIn) {
   const title = doc[`title_${lang}`] || doc.title_fr;
   const faved = favIds.has(doc.id);
   const thumb = driveThumbUrl(doc.drive_url);
+  const typeLabel = docTypeLabel(doc, docTypes);
 
   const el = document.createElement("div");
   el.className = "doc-card";
@@ -145,7 +150,7 @@ function docCard(doc, levels, subjects, sections, favIds, isLoggedIn) {
     <div class="doc-body">
       <div class="doc-title">${escapeHtml(title)}</div>
       <div class="doc-meta">
-        ${doc.doc_type ? `<span class="chip">${escapeHtml(docTypeLabel(doc))}</span>` : ""}
+        ${typeLabel ? `<span class="chip">${escapeHtml(typeLabel)}</span>` : ""}
         ${level ? `<span class="chip primary">${escapeHtml(level[`name_${lang}`] || level.name_fr)}</span>` : ""}
         ${subject ? `<span class="chip accent">${escapeHtml(subject[`name_${lang}`] || subject.name_fr)}</span>` : ""}
         ${section ? `<span class="chip neutral">${escapeHtml(section[`name_${lang}`] || section.name_fr)}</span>` : ""}
@@ -213,6 +218,10 @@ async function fetchSubjects() {
 // Sections (filières) — only meaningful for 2ème→4ème secondaire.
 async function fetchSections() {
   return safeSelect("sections", "*", "ord");
+}
+
+async function fetchDocTypes() {
+  return safeSelect("document_types", "*", "ord");
 }
 
 // Returns { [level_id]: [section_id, ...] }
