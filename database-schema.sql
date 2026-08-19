@@ -485,7 +485,7 @@ from public.levels dup
 join public.levels k on k.name_fr = dup.name_fr
 where d.level_id = dup.id
   and k.id <> dup.id
-  and k.id = (select min(id) from public.levels where name_fr = dup.name_fr);
+  and k.id = (select (min(id::text))::uuid from public.levels where name_fr = dup.name_fr);
 
 -- 2) Drop duplicate levels (keep the lowest id per name).
 delete from public.levels dup
@@ -499,7 +499,7 @@ from public.subjects dup
 join public.subjects k on k.name_fr = dup.name_fr
 where d.subject_id = dup.id
   and k.id <> dup.id
-  and k.id = (select min(id) from public.subjects where name_fr = dup.name_fr);
+  and k.id = (select (min(id::text))::uuid from public.subjects where name_fr = dup.name_fr);
 
 delete from public.subjects dup
 using public.subjects k
